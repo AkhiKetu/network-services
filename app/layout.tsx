@@ -23,26 +23,9 @@ const NO_FLASH_THEME_SCRIPT = `
 `
 
 export const metadata: Metadata = {
-  title: 'Network Services - WiFi Management',
-  description: 'Manage your WiFi network connections and billing',
-  generator: 'v0.app',
-  icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
-  },
+  title: 'CCNetworks-Portal',
+  description: 'Manage your WiFi boosters and connected devices effortlessly to ensure fast, stable, and reliable coverage across your entire network.',
+  generator: 'Akhi Ketu Chakma',
 }
 
 export const viewport: Viewport = {

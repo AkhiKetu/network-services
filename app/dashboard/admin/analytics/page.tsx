@@ -22,7 +22,7 @@ export default function AdminAnalytics() {
     .filter(c => c.status === 'active')
     .reduce((sum, c) => sum + c.monthlyPrice, 0)
 
-  const topUsers = regularUsers
+  const topUsers = [...regularUsers]
     .sort((a, b) => (b.totalPaid || 0) - (a.totalPaid || 0))
     .slice(0, 5)
 

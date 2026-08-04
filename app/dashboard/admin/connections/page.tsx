@@ -26,12 +26,13 @@ export default function AdminConnections() {
   }
 
   const handleRenew = (connection: typeof connections[0]) => {
-    const updatedConnection = {
+    const expirationDate = new Date()
+    expirationDate.setFullYear(expirationDate.getFullYear() + 1)
+    updateConnection({
       ...connection,
-      expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      status: 'active' as const
-    }
-    updateConnection(updatedConnection)
+      expirationDate: expirationDate.toISOString().split('T')[0],
+      status: 'active',
+    })
   }
 
   return (
@@ -44,16 +45,9 @@ export default function AdminConnections() {
 
       {/* Search and Filters */}
       <div className="flex flex-col gap-4">
-        <div className="flex gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-            <Input
-              placeholder="Search connections..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+          <Input placeholder="Search connections..." value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} className="pl-10" />
         </div>
 
         <div className="flex gap-2">
@@ -79,19 +73,17 @@ export default function AdminConnections() {
       </div>
 
       {/* Stats */}
-      <div className="grid md:grid-cols-3 gap-4">
-        <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-sm text-muted-foreground mb-1">Total Connections</p>
-          <p className="text-3xl font-bold text-foreground">{connections.length}</p>
-        </div>
-        <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-sm text-muted-foreground mb-1">Active</p>
-          <p className="text-3xl font-bold text-green-600">{connections.filter(c => c.status === 'active').length}</p>
-        </div>
-        <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-sm text-muted-foreground mb-1">Expired</p>
-          <p className="text-3xl font-bold text-red-600">{connections.filter(c => c.status === 'expired').length}</p>
-        </div>
+      <div className="grid gap-4 md:grid-cols-3">
+        {[
+          ['Total Connections', connections.length, 'text-foreground'],
+          ['Active', connections.filter(c => c.status === 'active').length, 'text-green-600'],
+          ['Expired', connections.filter(c => c.status === 'expired').length, 'text-red-600'],
+        ].map(([label, value, color]) => (
+          <div key={label} className="rounded-lg border border-border bg-card p-4">
+            <p className="mb-1 text-sm text-muted-foreground">{label}</p>
+            <p className={`text-3xl font-bold ${color}`}>{value}</p>
+          </div>
+        ))}
       </div>
 
       {/* Connections Grid */}
@@ -109,14 +101,10 @@ export default function AdminConnections() {
           ))}
         </div>
       ) : (
-        <div className="bg-card border border-border rounded-lg p-12 text-center">
-          <Wifi className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">
-            {searchTerm ? 'No connections found' : 'No connections'}
-          </h3>
-          <p className="text-muted-foreground">
-            {searchTerm ? 'Try adjusting your search' : 'No connections match the current filters'}
-          </p>
+        <div className="rounded-lg border border-border bg-card p-12 text-center">
+          <Wifi className="mx-auto mb-4 h-16 w-16 text-muted-foreground opacity-50" />
+          <h3 className="mb-2 text-lg font-semibold text-foreground">{searchTerm ? 'No connections found' : 'No connections'}</h3>
+          <p className="text-muted-foreground">{searchTerm ? 'Try adjusting your search' : 'No connections match the current filters'}</p>
         </div>
       )}
     </div>

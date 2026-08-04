@@ -20,12 +20,13 @@ export default function UserDashboard() {
   const monthlyBill = calculateMonthlyBill(activeConnections)
 
   const handleRenew = (connection: typeof connections[0]) => {
-    const updatedConnection = {
+    const expirationDate = new Date()
+    expirationDate.setFullYear(expirationDate.getFullYear() + 1)
+    updateConnection({
       ...connection,
-      expirationDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      status: 'active' as const
-    }
-    updateConnection(updatedConnection)
+      expirationDate: expirationDate.toISOString().split('T')[0],
+      status: 'active',
+    })
   }
 
   return (

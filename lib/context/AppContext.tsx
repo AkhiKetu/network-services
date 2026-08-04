@@ -91,7 +91,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [notifications])
 
   const addConnection = (connection: Connection) => {
-    setConnections([...connections, connection])
+    setConnections(prev => [...prev, connection])
     const notification: Notification = {
       id: `notif-${Date.now()}`,
       userId: 'admin-1',
@@ -101,21 +101,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       read: false,
       type: 'connection'
     }
-    setNotifications([...notifications, notification])
+    setNotifications(prev => [...prev, notification])
   }
 
   const updateConnection = (updatedConnection: Connection) => {
-    setConnections(connections.map(conn =>
+    setConnections(prev => prev.map(conn =>
       conn.id === updatedConnection.id ? updatedConnection : conn
     ))
   }
 
   const deleteConnection = (id: string) => {
-    setConnections(connections.filter(conn => conn.id !== id))
+    setConnections(prev => prev.filter(conn => conn.id !== id))
   }
 
   const addBilling = (billing: Billing) => {
-    setBillings([...billings, billing])
+    setBillings(prev => [...prev, billing])
   }
 
   // Used e.g. when an admin/user finalizes their display name in Settings.
@@ -128,7 +128,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }
 
   const addUser = (user: User) => {
-    setUsers([...users, user])
+    setUsers(prev => [...prev, user])
     const notification: Notification = {
       id: `notif-${Date.now()}`,
       userId: 'admin-1',
@@ -154,7 +154,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }
 
   const markNotificationAsRead = (id: string) => {
-    setNotifications(notifications.map(notif =>
+    setNotifications(prev => prev.map(notif =>
       notif.id === id ? { ...notif, read: true } : notif
     ))
   }
