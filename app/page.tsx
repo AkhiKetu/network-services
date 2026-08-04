@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { LoginModal } from "@/components/auth/LoginModal";
 import { ThemeToggle } from "@/components/common/ThemeToggle";
 import WifiConnectingAnimation from "@/components/animation/WifiConnectingAnimation";
+import DarkModeLandingBackground from "@/components/animation/DarkModeBackground";
 import {
   Wifi,
   BarChart3,
@@ -24,7 +25,7 @@ import {
 const NAV_LINKS = [
   { label: "Home", href: "#home", icon: HomeIcon },
   { label: "About", href: "#about", icon: Info },
-  { label: "Offers", href: "#offers", icon: Tag, badge: 1 },
+  { label: "Offers", href: "#offers", icon: Tag },
   { label: "Pricing", href: "#pricing", icon: BadgePercent },
   { label: "Coverage", href: "#coverage", icon: MapPin },
   { label: "Contact", href: "#contact", icon: Phone },
@@ -108,7 +109,10 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white text-slate-950 dark:bg-black dark:text-white">
+    <div className="relative isolate min-h-screen overflow-x-hidden bg-white text-slate-950 dark:bg-black dark:text-white">
+      <DarkModeLandingBackground />
+
+      <div className="relative z-10">
       <header className="fixed inset-x-0 top-4 z-40 flex justify-center px-4">
         {/* Customize this single capsule navbar here; dark: classes automatically change it in dark mode. */}
         <nav
@@ -140,19 +144,13 @@ export default function Home() {
                   >
                     {link.label}
                   </span>
-
-                  {link.badge && (
-                    <span className="ml-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-red-500 text-[10px] font-semibold text-white">
-                      {link.badge}
-                    </span>
-                  )}
                 </a>
               );
             })}
           </div>
 
           <div className="ml-1 flex shrink-0 items-center gap-1">
-            <ThemeToggle className="cursor-pointer border-0 bg-transparent text-slate-800! transition-[color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:bg-transparent! hover:text-primary! active:translate-y-0 dark:!text-white dark:hover:!text-primary" />
+            <ThemeToggle className="cursor-pointer border-0 bg-transparent text-slate-800! transition-[color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:bg-transparent! hover:text-primary! active:translate-y-0 dark:text-white! dark:hover:text-primary!" />
 
             <Button
               type="button"
@@ -170,14 +168,14 @@ export default function Home() {
 
       <section
         id="home"
-        className="relative overflow-hidden bg-white pt-32 dark:bg-black"
+        className="relative overflow-hidden bg-transparent pt-32"
       >
         <div className="container mx-auto px-4 py-16 md:px-6 md:py-24">
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <div>
               <p
                 aria-label={COMPANY_NAME}
-                className="mb-5 min-h-20 max-w-2xl text-3xl font-bold leading-tight tracking-tight text-primary sm:min-h-24 sm:text-4xl md:min-h-32 md:text-5xl"
+                className="mb-5 min-h-20 max-w-2xl text-3xl font-bold leading-tight tracking-tight text-black dark:text-white sm:min-h-24 sm:text-4xl md:min-h-32 md:text-5xl"
               >
                 <span aria-hidden="true">{typedCompanyName}</span>
               </p>
@@ -230,7 +228,7 @@ export default function Home() {
 
       <section
         id="about"
-        className="bg-white px-4 py-16 md:px-6 md:py-24 dark:bg-black"
+        className="bg-transparent px-4 py-16 md:px-6 md:py-24"
       >
         <div className="container mx-auto">
           <div className="mb-12">
@@ -270,7 +268,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="bg-white px-4 pb-16 md:px-6 md:pb-24 dark:bg-black">
+      <section className="bg-transparent px-4 pb-16 md:px-6 md:pb-24">
         <div className="container mx-auto">
           <div className="space-y-6 rounded-lg border border-slate-200 bg-white p-8 text-center md:p-12 dark:border-white/15 dark:bg-black">
             <h2 className="text-2xl font-bold text-slate-950 md:text-3xl dark:text-white">
@@ -294,7 +292,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="border-t border-slate-200 bg-white py-8 dark:border-white/15 dark:bg-black">
+      <footer className="border-t border-slate-200 bg-transparent py-8 dark:border-white/15">
         <div className="container mx-auto px-4 text-center text-sm text-slate-500 dark:text-white/50">
           <p>
             &copy; {new Date().getFullYear()} NetFlow. All rights reserved. |
@@ -312,6 +310,7 @@ export default function Home() {
       </button>
 
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+      </div>
     </div>
   );
 }

@@ -1,11 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { FormEvent, useEffect, useState,} from 'react'
 import { useRouter } from 'next/navigation'
 import { X, Wifi, Phone, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/lib/context/AuthContext'
+import { AnimatePresence, motion } from 'motion/react'
+
 
 interface LoginModalProps {
   open: boolean
@@ -18,40 +20,52 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showForgot, setShowForgot] = useState(false)
+
   const { login } = useAuth()
   const router = useRouter()
 
-  // Reset form state whenever the modal is (re)opened
   useEffect(() => {
-    if (open) {
-      setPhone('')
-      setPassword('')
-      setError('')
-      setShowForgot(false)
-    }
+    if (!open) return
+
+    setPhone('')
+    setPassword('')
+    setError('')
+    setShowForgot(false)
   }, [open])
 
-  // Lock background scroll while the modal is open
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden'
-      return () => {
-        document.body.style.overflow = ''
+    if (!open) return
+
+    document.body.style.overflow = 'hidden'
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose()
       }
     }
-  }, [open])
 
-  if (!open) return null
+    window.addEventListener('keydown', handleEscape)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', handleEscape)
+    }
+  }, [open, onClose])
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
     setError('')
     setLoading(true)
+
     try {
       const user = await login(phone.trim(), password)
+
       onClose()
-      router.push(user.role === 'admin' ? '/dashboard/admin' : '/dashboard/user')
-    } catch (err) {
+
+      router.push(
+        user.role === 'admin' ? '/dashboard/admin' : '/dashboard/user'
+      )
+    } catch {
       setError('Invalid phone number or password. Please try again.')
     } finally {
       setLoading(false)
@@ -59,113 +73,187 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
-    >
-      {/* Backdrop */}
-      <button
-        aria-label="Close login"
-        onClick={onClose}
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-      />
-
-      {/* Modal card */}
-      <div className="relative w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl p-6 animate-in fade-in zoom-in-95 duration-150">
-        <button
-          onClick={onClose}
-          aria-label="Close"
-          className="absolute right-4 top-4 text-muted-foreground hover:text-foreground transition-colors"
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="login-modal-title"
+          initial="closed"
+          animate="open"
+          exit="closed"
         >
-          <X className="w-5 h-5" />
-        </button>
+          {/* Backdrop */}
+          <motion.button
+            type="button"
+            aria-label="Close login"
+            onClick={onClose}
+            className="absolute inset-0 cursor-pointer bg-black/60"
+            variants={{
+              closed: { opacity: 0, backdropFilter: 'blur(0px)' },
+              open: { opacity: 1, backdropFilter: 'blur(6px)' },
+            }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          />
 
-        {/* Header */}
-        <div className="text-center space-y-2 mb-6">
-          <div className="flex justify-center mb-2">
-            <div className="p-3 bg-primary rounded-lg">
-              <Wifi className="w-7 h-7 text-white" />
-            </div>
-          </div>
-          <h2 className="text-2xl font-bold text-foreground">Login</h2>
-          <p className="text-sm text-muted-foreground">
-            Use your phone number to access your account
-          </p>
-        </div>
+          {/* Modal */}
+          <motion.div
+            className="relative w-full max-w-sm"
+            variants={{
+              closed: {
+                opacity: 0,
+                y: 40,
+                scale: 0.92,
+                filter: 'blur(4px)',
+              },
+              open: {
+                opacity: 1,
+                y: 0,
+                scale: 1,
+                filter: 'blur(0px)',
+              },
+            }}
+            transition={{
+              type: 'spring',
+              stiffness: 300,
+              damping: 26,
+              mass: 0.9,
+              opacity: { duration: 0.25 },
+              filter: { duration: 0.25 },
+            }}
+          >
+            <div className="relative rounded-2xl border border-border bg-card p-6 shadow-[0_28px_90px_rgba(0,0,0,0.35)]">
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close"
+                className="absolute right-4 top-4 cursor-pointer text-muted-foreground transition-[color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:text-foreground"
+              >
+                <X className="h-5 w-5" />
+              </button>
 
-        {!showForgot ? (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-foreground mb-2">
-                <Phone className="w-4 h-4" /> Phone Number
-              </label>
-              <Input
-                type="tel"
-                inputMode="numeric"
-                placeholder="01XXXXXXXXX"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                required
-                autoFocus
-              />
-            </div>
+              <div className="mb-6 space-y-2 text-center">
+                <div className="mb-2 flex justify-center">
+                  <motion.div
+                    className="rounded-lg bg-primary p-3"
+                    initial={{ scale: 0.7, rotate: -10 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{
+                      type: 'spring',
+                      stiffness: 320,
+                      damping: 18,
+                      delay: 0.12,
+                    }}
+                  >
+                    <Wifi className="h-7 w-7 text-white" />
+                  </motion.div>
+                </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <Lock className="w-4 h-4" /> Password
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setShowForgot(true)}
-                  className="text-xs text-primary hover:underline"
+                <h2
+                  id="login-modal-title"
+                  className="text-2xl font-bold text-foreground"
                 >
-                  Forgot password?
-                </button>
+                  Login
+                </h2>
+
+                <p className="text-sm text-muted-foreground">
+                  Use your phone number to access your account
+                </p>
               </div>
-              <Input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+
+              {!showForgot ? (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label className="mb-2 flex items-center gap-2 text-sm font-medium text-foreground">
+                      <Phone className="h-4 w-4" />
+                      Phone Number
+                    </label>
+
+                    <Input
+                      type="tel"
+                      inputMode="numeric"
+                      placeholder="01XXXXXXXXX"
+                      value={phone}
+                      onChange={(event) => setPhone(event.target.value)}
+                      required
+                      autoFocus
+                    />
+                  </div>
+
+                  <div>
+                    <div className="mb-2 flex items-center justify-between">
+                      <label className="flex items-center gap-2 text-sm font-medium text-foreground">
+                        <Lock className="h-4 w-4" />
+                        Password
+                      </label>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowForgot(true)}
+                        className="cursor-pointer text-xs text-primary transition-colors duration-200 ease-out hover:text-primary/70"
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
+
+                    <Input
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      required
+                    />
+                  </div>
+
+                  {error && (
+                    <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
+                      {error}
+                    </div>
+                  )}
+
+                  <Button
+                    type="submit"
+                    size="lg"
+                    disabled={loading}
+                    className="w-full cursor-pointer transition-transform duration-200 ease-out hover:-translate-y-0.5 active:translate-y-0"
+                  >
+                    {loading ? 'Logging in...' : 'Login'}
+                  </Button>
+
+                  <div className="space-y-1 rounded-lg bg-secondary/50 p-3 text-xs text-muted-foreground">
+                    <p className="font-medium text-foreground">Demo accounts</p>
+                    <p>User: 01711111111 / password</p>
+                    <p>Admin: 01799999999 / admin123</p>
+                  </div>
+
+                  <p className="text-center text-xs text-muted-foreground">
+                    New here? Your account is created by an admin — contact
+                    support to get connected.
+                  </p>
+                </form>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-center text-sm text-muted-foreground">
+                    Password resets are handled by an admin. Contact support
+                    with your registered phone number and we&apos;ll reset it
+                    for you.
+                  </p>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full cursor-pointer transition-transform duration-200 ease-out hover:-translate-y-0.5 active:translate-y-0"
+                    onClick={() => setShowForgot(false)}
+                  >
+                    Back to login
+                  </Button>
+                </div>
+              )}
             </div>
-
-            {error && (
-              <div className="p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
-
-            <Button type="submit" className="w-full" size="lg" disabled={loading}>
-              {loading ? 'Logging in...' : 'Login'}
-            </Button>
-
-            <div className="p-3 bg-secondary/50 rounded-lg text-xs text-muted-foreground space-y-1">
-              <p className="font-medium text-foreground">Demo accounts</p>
-              <p>User: 01711111111 / password</p>
-              <p>Admin: 01799999999 / admin123</p>
-            </div>
-
-            <p className="text-center text-xs text-muted-foreground">
-              New here? Your account is created by an admin — contact support
-              to get connected.
-            </p>
-          </form>
-        ) : (
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground text-center">
-              Password resets are handled by an admin. Contact support with
-              your registered phone number and we'll reset it for you.
-            </p>
-            <Button variant="outline" className="w-full" onClick={() => setShowForgot(false)}>
-              Back to login
-            </Button>
-          </div>
-        )}
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
