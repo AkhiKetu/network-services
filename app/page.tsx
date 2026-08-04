@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { LoginModal } from '@/components/auth/LoginModal'
-import { ThemeToggle } from '@/components/common/ThemeToggle'
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { LoginModal } from "@/components/auth/LoginModal";
+import { ThemeToggle } from "@/components/common/ThemeToggle";
+import WifiConnectingAnimation from "@/components/animation/WifiConnectingAnimation";
 import {
   Wifi,
   BarChart3,
@@ -19,16 +19,16 @@ import {
   MapPin,
   Phone,
   LogIn,
-} from 'lucide-react'
+} from "lucide-react";
 
 const NAV_LINKS = [
-  { label: 'Home', href: '#', icon: HomeIcon },
-  { label: 'About', href: '#about', icon: Info },
-  { label: 'Offers', href: '#offers', icon: Tag, badge: 1 },
-  { label: 'Pricing', href: '#pricing', icon: BadgePercent },
-  { label: 'Coverage', href: '#coverage', icon: MapPin },
-  { label: 'Contact', href: '#contact', icon: Phone },
-]
+  { label: "Home", href: "#home", icon: HomeIcon },
+  { label: "About", href: "#about", icon: Info },
+  { label: "Offers", href: "#offers", icon: Tag, badge: 1 },
+  { label: "Pricing", href: "#pricing", icon: BadgePercent },
+  { label: "Coverage", href: "#coverage", icon: MapPin },
+  { label: "Contact", href: "#contact", icon: Phone },
+];
 
 const PACKAGES = [
   { speed: 50, price: 890 },
@@ -38,152 +38,180 @@ const PACKAGES = [
   { speed: 200, price: 2100 },
   { speed: 250, price: 3150 },
   { speed: 300, price: 4200 },
-]
+];
 
 const SERVICES = [
   {
     icon: Wifi,
-    title: 'Connection Tracking',
-    description: 'Real-time monitoring of all network connections',
+    title: "Connection Tracking",
+    description: "Real-time monitoring of all network connections",
   },
   {
     icon: BarChart3,
-    title: 'Billing Analytics',
-    description: 'Track payments and revenue at a glance',
+    title: "Billing Analytics",
+    description: "Track payments and revenue at a glance",
   },
   {
     icon: Users,
-    title: 'User Management',
-    description: 'Manage users and subscriptions efficiently',
+    title: "User Management",
+    description: "Manage users and subscriptions efficiently",
   },
   {
     icon: Lock,
-    title: 'Secure & Reliable',
-    description: 'Enterprise-grade security for your data',
+    title: "Secure & Reliable",
+    description: "Enterprise-grade security for your data",
   },
-]
+];
+
+const COMPANY_NAME = "Welcome, To Creative Cable and Networks";
 
 export default function Home() {
-  const [scrolled, setScrolled] = useState(false)
-  const [loginOpen, setLoginOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [typedCompanyName, setTypedCompanyName] = useState("");
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40)
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 40);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  useEffect(() => {
+    let index = 0;
+    let timerId: number;
+
+    const typeCompanyName = () => {
+      if (index < COMPANY_NAME.length) {
+        index += 1;
+        setTypedCompanyName(COMPANY_NAME.slice(0, index));
+        timerId = window.setTimeout(typeCompanyName, 55);
+        return;
+      }
+
+      timerId = window.setTimeout(() => {
+        index = 0;
+        setTypedCompanyName("");
+        timerId = window.setTimeout(typeCompanyName, 300);
+      }, 3000);
+    };
+
+    typeCompanyName();
+
+    return () => window.clearTimeout(timerId);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Capsule Navbar */}
-      <header className="fixed top-4 inset-x-0 z-40 flex justify-center px-4">
+    <div className="min-h-screen bg-white text-slate-950 dark:bg-black dark:text-white">
+      <header className="fixed inset-x-0 top-4 z-40 flex justify-center px-4">
+        {/* Customize this single capsule navbar here; dark: classes automatically change it in dark mode. */}
         <nav
-          className={`flex items-center justify-between bg-[#0a0e27]/90 backdrop-blur-lg border border-white/10 rounded-full shadow-lg transition-all duration-300 ease-out ${
-            scrolled
-              ? 'gap-2 px-3 py-2 max-w-fit'
-              : 'gap-6 px-6 py-3 w-full max-w-5xl'
+          className={`flex max-w-[calc(100vw-2rem)] items-center rounded-full border border-white/60 bg-white/60 shadow-[0_8px_30px_rgba(15,23,42,0.16)] backdrop-blur-3xl backdrop-saturate-150 transition-[padding,gap,background-color,border-color,box-shadow] duration-500 ease-out dark:border-white/10 dark:bg-black/55 dark:shadow-[0_10px_35px_rgba(0,0,0,0.55)] ${
+            scrolled ? "gap-0.5 px-3 py-2" : "gap-1 px-4 py-2.5"
           }`}
         >
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 shrink-0">
-            <div className="p-2 bg-primary rounded-full">
-              <Wifi className="w-4 h-4 text-white" />
-            </div>
-            <span
-              className={`font-bold text-white tracking-tight overflow-hidden transition-all duration-300 ${
-                scrolled ? 'w-0 opacity-0' : 'w-auto opacity-100 ml-0'
-              }`}
-            >
-              NetFlow
-            </span>
-          </Link>
-
-          {/* Nav links */}
-          <div className="hidden lg:flex items-center gap-1">
+          <div className="no-scrollbar flex items-center gap-1 overflow-x-auto">
             {NAV_LINKS.map((link) => {
-              const Icon = link.icon
+              const Icon = link.icon;
+
               return (
                 <a
                   key={link.label}
                   href={link.href}
                   title={link.label}
-                  className="relative flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                  className={`flex shrink-0 cursor-pointer items-center rounded-full py-2 text-sm font-medium text-slate-700 transition-[padding,color,transform] duration-200 ease-out hover:-translate-y-1 hover:text-primary active:translate-y-0 dark:text-white/85 dark:hover:text-primary ${
+                    scrolled ? "px-2.5" : "px-3"
+                  }`}
                 >
-                  <Icon className="w-4 h-4 shrink-0" />
+                  <Icon className="h-5.5 w-5.5 shrink-0" />
+
                   <span
-                    className={`overflow-hidden transition-all duration-300 whitespace-nowrap ${
-                      scrolled ? 'w-0 opacity-0' : 'w-auto opacity-100'
+                    className={`overflow-hidden whitespace-nowrap transition-[max-width,margin,opacity] duration-300 ease-out ${
+                      scrolled
+                        ? "ml-0 max-w-0 opacity-0"
+                        : "ml-2 max-w-24 opacity-100"
                     }`}
                   >
                     {link.label}
                   </span>
+
                   {link.badge && (
-                    <span className="flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-[10px] font-semibold text-white shrink-0">
+                    <span className="ml-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-red-500 text-[10px] font-semibold text-white">
                       {link.badge}
                     </span>
                   )}
                 </a>
-              )
+              );
             })}
           </div>
 
-          {/* CTAs */}
-          <div className="flex items-center gap-2 shrink-0">
-            <ThemeToggle className="border-white/20 bg-white/5 !text-white hover:!bg-white/10" />
+          <div className="ml-1 flex shrink-0 items-center gap-1">
+            <ThemeToggle className="cursor-pointer border-0 bg-transparent text-slate-800! transition-[color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:bg-transparent! hover:text-primary! active:translate-y-0 dark:!text-white dark:hover:!text-primary" />
+
             <Button
-              size={scrolled ? 'icon' : 'default'}
-              className="bg-primary hover:bg-primary/90 rounded-full"
-              onClick={() => setLoginOpen(true)}
-              title="Quick Pay"
-            >
-              {scrolled ? <Wifi className="w-4 h-4" /> : 'Quick Pay'}
-            </Button>
-            <Button
-              size={scrolled ? 'icon' : 'default'}
-              variant="outline"
-              className="border-white/20 text-white bg-white/5 hover:bg-white/10 rounded-full"
+              type="button"
+              size={scrolled ? "icon" : "default"}
+              variant="ghost"
               onClick={() => setLoginOpen(true)}
               title="Login"
+              className="cursor-pointer rounded-full border border-slate-300/70 bg-transparent text-slate-800 transition-[border-color,color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:border-primary/50 hover:bg-transparent hover:text-primary active:translate-y-0 dark:border-white/15 dark:text-white dark:hover:border-primary/60 dark:hover:bg-transparent dark:hover:text-primary"
             >
-              {scrolled ? <LogIn className="w-4 h-4" /> : 'Login'}
+              {scrolled ? <LogIn className="h-4 w-4" /> : "Login"}
             </Button>
           </div>
         </nav>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#0a0e27] via-[#141a3d] to-[#1e1550] pt-32">
-        <div className="container mx-auto px-4 md:px-6 py-16 md:py-24">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left: copy + pricing */}
+      <section
+        id="home"
+        className="relative overflow-hidden bg-white pt-32 dark:bg-black"
+      >
+        <div className="container mx-auto px-4 py-16 md:px-6 md:py-24">
+          <div className="grid items-center gap-12 lg:grid-cols-2">
             <div>
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white leading-tight mb-4">
+              <p
+                aria-label={COMPANY_NAME}
+                className="mb-5 min-h-20 max-w-2xl text-3xl font-bold leading-tight tracking-tight text-primary sm:min-h-24 sm:text-4xl md:min-h-32 md:text-5xl"
+              >
+                <span aria-hidden="true">{typedCompanyName}</span>
+              </p>
+
+              <h1 className="mb-4 text-2xl font-bold leading-tight text-slate-950 sm:text-3xl md:text-4xl dark:text-white">
                 Experience Uninterrupted Internet
                 <br />
-                with Our{' '}
-                <span className="text-primary">Premium Packages</span>
+                with Our <span className="text-primary">Premium Packages</span>
               </h1>
-              <p className="text-white/60 text-base md:text-lg mb-8 max-w-xl">
+
+              <p className="mb-8 max-w-xl text-base text-slate-600 md:text-lg dark:text-white/60">
                 Track connections, monitor billing, and manage your network
                 infrastructure all in one place.
               </p>
 
-              {/* Pricing grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4 max-w-xl">
+              <div className="grid max-w-xl grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4">
                 {PACKAGES.map((pkg) => (
                   <button
                     key={pkg.speed}
+                    type="button"
                     onClick={() => setLoginOpen(true)}
-                    className="group rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-primary/50 transition-colors p-3 md:p-4 text-left"
+                    className="cursor-pointer rounded-xl border border-slate-200 bg-white p-3 text-left transition-[border-color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:border-primary/50 active:translate-y-0 md:p-4 dark:border-white/15 dark:bg-black"
                   >
-                    <div className="flex items-baseline gap-1 mb-2">
-                      <span className="text-xl md:text-2xl font-bold text-primary">
+                    <div className="mb-2 flex items-baseline gap-1">
+                      <span className="text-xl font-bold text-primary md:text-2xl">
                         {pkg.speed}
                       </span>
-                      <span className="text-xs text-white/50">/Mbps</span>
+
+                      <span className="text-xs text-slate-500 dark:text-white/50">
+                        /Mbps
+                      </span>
                     </div>
-                    <div className="rounded-md bg-white/10 px-2 py-1.5 text-center text-sm font-semibold text-white">
+
+                    <div className="rounded-md bg-slate-100 px-2 py-1.5 text-center text-sm font-semibold text-slate-950 dark:bg-white/10 dark:text-white">
                       {pkg.price} TK
                     </div>
                   </button>
@@ -191,84 +219,99 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Right: illustration placeholder */}
-            <div className="hidden lg:flex items-center justify-center">
-              <div className="relative w-full max-w-sm aspect-square rounded-full bg-gradient-to-br from-primary/20 to-transparent flex items-center justify-center">
-                <div className="w-40 h-40 rounded-2xl bg-primary/10 border border-primary/30 flex items-center justify-center">
-                  <Wifi className="w-20 h-20 text-primary" strokeWidth={1.5} />
-                </div>
+            <div className="hidden items-center justify-center lg:flex">
+              <div className="relative aspect-square w-full max-w-md">
+                <WifiConnectingAnimation />
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Services Section */}
-      <section id="about" className="container mx-auto px-4 md:px-6 py-16 md:py-24">
-        <div className="mb-12">
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-            Services & Solutions
-          </h2>
-          <p className="text-muted-foreground">
-            Join today to take advantage of NetFlow's great features.
-          </p>
-        </div>
+      <section
+        id="about"
+        className="bg-white px-4 py-16 md:px-6 md:py-24 dark:bg-black"
+      >
+        <div className="container mx-auto">
+          <div className="mb-12">
+            <h2 className="mb-2 text-2xl font-bold text-slate-950 md:text-3xl dark:text-white">
+              Services & Solutions
+            </h2>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {SERVICES.map((service) => {
-            const Icon = service.icon
-            return (
-              <div
-                key={service.title}
-                className="p-6 bg-card border border-border rounded-lg"
-              >
-                <div className="inline-flex p-3 bg-primary/10 rounded-lg mb-4">
-                  <Icon className="w-6 h-6 text-primary" />
+            <p className="text-slate-600 dark:text-white/60">
+              Join today to take advantage of NetFlow&apos;s great features.
+            </p>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {SERVICES.map((service) => {
+              const Icon = service.icon;
+
+              return (
+                <div
+                  key={service.title}
+                  className="rounded-lg border border-slate-200 bg-white p-6 dark:border-white/15 dark:bg-black"
+                >
+                  <div className="mb-4 inline-flex rounded-lg bg-primary/10 p-3">
+                    <Icon className="h-6 w-6 text-primary" />
+                  </div>
+
+                  <h3 className="mb-2 font-semibold text-slate-950 dark:text-white">
+                    {service.title}
+                  </h3>
+
+                  <p className="text-sm text-slate-600 dark:text-white/60">
+                    {service.description}
+                  </p>
                 </div>
-                <h3 className="font-semibold text-foreground mb-2">
-                  {service.title}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {service.description}
-                </p>
-              </div>
-            )
-          })}
+              );
+            })}
+          </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="container mx-auto px-4 md:px-6 pb-16 md:pb-24">
-        <div className="bg-card border border-border rounded-lg p-8 md:p-12 text-center space-y-6">
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground">
-            Get Started Today
-          </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Login with your phone number to manage your connections and
-            billing. New accounts are set up by an admin.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="w-full sm:w-auto" onClick={() => setLoginOpen(true)}>
+      <section className="bg-white px-4 pb-16 md:px-6 md:pb-24 dark:bg-black">
+        <div className="container mx-auto">
+          <div className="space-y-6 rounded-lg border border-slate-200 bg-white p-8 text-center md:p-12 dark:border-white/15 dark:bg-black">
+            <h2 className="text-2xl font-bold text-slate-950 md:text-3xl dark:text-white">
+              Get Started Today
+            </h2>
+
+            <p className="mx-auto max-w-2xl text-slate-600 dark:text-white/60">
+              Login with your phone number to manage your connections and
+              billing. New accounts are set up by an admin.
+            </p>
+
+            <Button
+              size="lg"
+              className="cursor-pointer transition-transform duration-200 ease-out hover:-translate-y-0.5 active:translate-y-0"
+              onClick={() => setLoginOpen(true)}
+            >
               Login
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border py-8 bg-secondary/50">
-        <div className="container mx-auto px-4 text-center text-muted-foreground text-sm">
-          <p>&copy; 2024 NetFlow. All rights reserved. | This is a demo frontend application.</p>
+      <footer className="border-t border-slate-200 bg-white py-8 dark:border-white/15 dark:bg-black">
+        <div className="container mx-auto px-4 text-center text-sm text-slate-500 dark:text-white/50">
+          <p>
+            &copy; {new Date().getFullYear()} NetFlow. All rights reserved. |
+            This is a demo frontend application.
+          </p>
         </div>
       </footer>
 
-      {/* Chat bubble */}
-      <button className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-primary text-white shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors">
-        <MessageSquare className="w-6 h-6" />
+      <button
+        type="button"
+        aria-label="Open chat"
+        className="fixed bottom-6 right-6 z-40 flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-primary text-white shadow-lg transition-[background-color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:bg-primary/90 active:translate-y-0"
+      >
+        <MessageSquare className="h-6 w-6" />
       </button>
 
       <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     </div>
-  )
+  );
 }

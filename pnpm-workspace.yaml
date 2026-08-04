@@ -1,3 +1,2 @@
 allowBuilds:
-  msw: true
-  sharp: false
+  msw: set this to true or false
