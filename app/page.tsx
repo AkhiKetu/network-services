@@ -158,7 +158,7 @@ export default function Home() {
           id="home"
           className="relative scroll-mt-24 bg-transparent pt-28 sm:pt-32"
         >
-          <div className={`${PAGE_WIDTH} pb-14 sm:pb-20`}>
+          <div className={`${PAGE_WIDTH} pb-6 sm:pb-10`}>
             <div className="flex justify-center">
               <div className="aspect-[4/3] w-full max-w-[260px] sm:max-w-xs md:max-w-sm">
                 <NetworkingAnimation />
@@ -180,7 +180,6 @@ export default function Home() {
               <h1 className="mb-4 text-2xl font-semibold leading-tight text-slate-950 dark:text-white sm:text-3xl lg:text-4xl">
                 Experience Uninterrupted Internet
                 <br className="hidden sm:block" />
-
                 <span className="sm:ml-2">
                   with Our{" "}
                   <span className="text-primary">Premium Packages</span>
@@ -191,6 +190,51 @@ export default function Home() {
                 Track connections, monitor billing, and manage your network
                 infrastructure all in one place.
               </p>
+
+              {/* HERO HIGHLIGHTS */}
+              <div className="mx-auto mt-7 grid w-full max-w-[720px] grid-cols-3 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.03]">
+                <div className="flex min-h-24 flex-col items-center justify-center gap-2.5 px-2 py-4 text-center transition-transform duration-200 hover:-translate-y-0.5">
+                  <Wifi className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
+
+                  <div>
+                    <p className="text-sm font-semibold text-slate-950 dark:text-white sm:text-[15px]">
+                      50–300 Mbps
+                    </p>
+
+                    <p className="mt-0.5 hidden text-xs text-slate-500 dark:text-white/50 sm:block">
+                      Flexible speeds
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex min-h-24 flex-col items-center justify-center gap-2.5 border-x border-slate-200 px-2 py-4 text-center transition-transform duration-200 hover:-translate-y-0.5 dark:border-white/10">
+                  <Lock className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
+
+                  <div>
+                    <p className="text-sm font-semibold text-slate-950 dark:text-white sm:text-[15px]">
+                      Fiber Network
+                    </p>
+
+                    <p className="mt-0.5 hidden text-xs text-slate-500 dark:text-white/50 sm:block">
+                      Stable connection
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex min-h-24 flex-col items-center justify-center gap-2.5 px-2 py-4 text-center transition-transform duration-200 hover:-translate-y-0.5">
+                  <Phone className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
+
+                  <div>
+                    <p className="text-sm font-semibold text-slate-950 dark:text-white sm:text-[15px]">
+                      24/7 Support
+                    </p>
+
+                    <p className="mt-0.5 hidden text-xs text-slate-500 dark:text-white/50 sm:block">
+                      Always available
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -198,10 +242,10 @@ export default function Home() {
         {/* ABOUT */}
         <section
           id="about"
-          className="scroll-mt-24 bg-transparent py-14 sm:py-20"
+          className="scroll-mt-24 bg-transparent pb-10 pt-6 sm:pb-14 sm:pt-8"
         >
           <div className={PAGE_WIDTH}>
-            <div className="mb-9">
+            <div className="mb-6">
               <h2 className="mb-2 text-2xl font-bold text-slate-950 dark:text-white sm:text-3xl">
                 Services & Solutions
               </h2>
@@ -245,7 +289,7 @@ export default function Home() {
         />
 
         {/* GET STARTED */}
-        <section className="bg-transparent py-14 sm:py-20">
+        <section className="bg-transparent py-10 sm:py-14">
           <div className={PAGE_WIDTH}>
             <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm dark:border-white/15 dark:bg-black sm:p-10">
               <h2 className="mb-3 text-2xl font-bold text-slate-950 dark:text-white sm:text-3xl">
@@ -273,10 +317,10 @@ export default function Home() {
         {/* CONTACT */}
         <section
           id="contact"
-          className="scroll-mt-24 bg-transparent py-14 sm:py-20"
+          className="scroll-mt-24 bg-transparent py-10 sm:py-14"
         >
           <div className={PAGE_WIDTH}>
-            <div className="mb-9">
+            <div className="mb-6">
               <p className="mb-2 text-sm font-semibold uppercase tracking-[0.18em] text-primary">
                 Contact
               </p>
@@ -341,8 +385,7 @@ export default function Home() {
         <footer className="bg-transparent py-8">
           <div className={`${PAGE_WIDTH} text-center`}>
             <p className="text-sm text-slate-500 dark:text-white/50">
-              &copy; {new Date().getFullYear()} CCNetworks. All rights
-              reserved.
+              &copy; {new Date().getFullYear()} CCNetworks. All rights reserved.
             </p>
           </div>
         </footer>
@@ -355,10 +398,7 @@ export default function Home() {
           <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6" />
         </button>
 
-        <LoginModal
-          open={loginOpen}
-          onClose={() => setLoginOpen(false)}
-        />
+        <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
       </div>
     </div>
   );
