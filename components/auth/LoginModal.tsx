@@ -221,11 +221,11 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
                     {loading ? 'Logging in...' : 'Login'}
                   </Button>
 
-                  <div className="space-y-1 rounded-lg bg-secondary/50 p-3 text-xs text-muted-foreground">
+                  {/* <div className="space-y-1 rounded-lg bg-secondary/50 p-3 text-xs text-muted-foreground">
                     <p className="font-medium text-foreground">Demo accounts</p>
                     <p>User: 01711111111 / password</p>
                     <p>Admin: 01799999999 / admin123</p>
-                  </div>
+                  </div> */}
 
                   <p className="text-center text-xs text-muted-foreground">
                     New here? Your account is created by an admin — contact

@@ -1,11 +1,14 @@
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata, Viewport } from "next";
+import type { ReactNode } from "react";
 
 import "./globals.css";
 
 import { AuthProvider } from "@/lib/context/AuthContext";
 import { AppProvider } from "@/lib/context/AppContext";
 import { ThemeProvider } from "@/lib/context/ThemeContext";
+
+const SITE_URL = "https://ccnetworks.vercel.app";
 
 const NO_FLASH_THEME_SCRIPT = `
 (function () {
@@ -29,29 +32,52 @@ const NO_FLASH_THEME_SCRIPT = `
 `;
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
+
   title: "Creative Cable & Networks",
+
   description:
     "Fast, stable, and reliable internet services with flexible packages from Creative Cable & Networks.",
+
   generator: "Akhi Ketu Chakma",
 
   openGraph: {
     title: "Creative Cable & Networks",
+
     description:
       "Experience fast and reliable internet with our premium packages.",
-    type: "website",
+
+    url: SITE_URL,
+
     siteName: "Creative Cable & Networks",
+
+    type: "website",
+
+    images: [
+      {
+        url: `${SITE_URL}/opengraph-image.png`,
+        width: 1200,
+        height: 630,
+        alt: "Creative Cable & Networks",
+      },
+    ],
   },
 
   twitter: {
     card: "summary_large_image",
+
     title: "Creative Cable & Networks",
+
     description:
       "Experience fast and reliable internet with our premium packages.",
+
+    images: [`${SITE_URL}/opengraph-image.png`],
   },
 };
 
 export const viewport: Viewport = {
   colorScheme: "light dark",
+
   themeColor: [
     {
       media: "(prefers-color-scheme: light)",
@@ -67,7 +93,7 @@ export const viewport: Viewport = {
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: ReactNode;
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
