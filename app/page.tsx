@@ -1,5 +1,12 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { LoginModal } from "@/components/auth/LoginModal";
+import { ThemeToggle } from "@/components/common/ThemeToggle";
+import NetworkingAnimation from "@/components/animation/NetworkingAnimation";
+import DarkModeLandingBackground from "@/components/animation/DarkModeBackground";
+import CompanyNameTyping from "@/components/animation/CompanyNameTyping";
+import PricingSection from "@/components/sections/PricingSection";
 import { useEffect, useState } from "react";
 import {
   Wifi,
@@ -16,14 +23,6 @@ import {
   LogIn,
   Mail,
 } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
-import { LoginModal } from "@/components/auth/LoginModal";
-import { ThemeToggle } from "@/components/common/ThemeToggle";
-import NetworkingAnimation from "@/components/animation/NetworkingAnimation";
-import DarkModeLandingBackground from "@/components/animation/DarkModeBackground";
-import CompanyNameTyping from "@/components/animation/CompanyNameTyping";
-import PricingSection from "@/components/sections/PricingSection";
 
 const NAV_LINKS = [
   { label: "Home", href: "#home", icon: HomeIcon },
@@ -160,7 +159,7 @@ export default function Home() {
         >
           <div className={`${PAGE_WIDTH} pb-6 sm:pb-10`}>
             <div className="flex justify-center">
-              <div className="aspect-[4/3] w-full max-w-[260px] sm:max-w-xs md:max-w-sm">
+              <div className="aspect-4/3 w-full max-w-65 sm:max-w-xs md:max-w-sm">
                 <NetworkingAnimation />
               </div>
             </div>
@@ -192,7 +191,7 @@ export default function Home() {
               </p>
 
               {/* HERO HIGHLIGHTS */}
-              <div className="mx-auto mt-7 grid w-full max-w-[720px] grid-cols-3 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.03]">
+              <div className="mx-auto mt-7 grid w-full max-w-180 grid-cols-3 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.03]">
                 <div className="flex min-h-24 flex-col items-center justify-center gap-2.5 px-2 py-4 text-center transition-transform duration-200 hover:-translate-y-0.5">
                   <Wifi className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
 
