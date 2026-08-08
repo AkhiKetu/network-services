@@ -65,10 +65,10 @@ const USER_LINKS = [
   },
 ];
 
-function HoverLabel({ text }: { text: string }) {
+function HoverLabel({ children }: { children: string }) {
   return (
-    <span className="pointer-events-none absolute left-1/2 top-full mt-1 -translate-x-1/2 translate-y-1 whitespace-nowrap text-xs font-medium text-foreground opacity-0 transition-all duration-150 ease-out group-hover:translate-y-0 group-hover:opacity-100">
-      {text}
+    <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1 -translate-x-1/2 translate-y-1 whitespace-nowrap text-xs font-medium text-foreground opacity-0 transition-[opacity,transform] duration-150 ease-out group-hover:translate-y-0 group-hover:opacity-100">
+      {children}
     </span>
   );
 }
@@ -87,10 +87,7 @@ export function CapsuleNavbar({ role }: CapsuleNavbarProps) {
     };
 
     handleScroll();
-
-    window.addEventListener("scroll", handleScroll, {
-      passive: true,
-    });
+    window.addEventListener("scroll", handleScroll, { passive: true });
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
@@ -111,7 +108,7 @@ export function CapsuleNavbar({ role }: CapsuleNavbarProps) {
             : "gap-1 px-3 py-2.5"
         }`}
       >
-        {/* LOGO */}
+        {/* Logo */}
         <Link
           href={`/dashboard/${role}`}
           aria-label="Creative Cable & Networks"
@@ -127,7 +124,7 @@ export function CapsuleNavbar({ role }: CapsuleNavbarProps) {
           />
         </Link>
 
-        {/* NAVIGATION */}
+        {/* Navigation */}
         {links.map((link) => {
           const Icon = link.icon;
 
@@ -138,7 +135,7 @@ export function CapsuleNavbar({ role }: CapsuleNavbarProps) {
                 aria-label={link.label}
                 className="flex cursor-pointer items-center gap-1.5 px-2 py-2 text-sm font-medium text-muted-foreground transition-[color,transform] duration-150 ease-out hover:-translate-y-0.5 hover:text-primary"
               >
-                <Icon className="h-4 w-4 shrink-0" />
+                <Icon className="h-4 w-4" />
 
                 {!scrolled && (
                   <span className="hidden whitespace-nowrap sm:inline">
@@ -147,19 +144,20 @@ export function CapsuleNavbar({ role }: CapsuleNavbarProps) {
                 )}
               </Link>
 
-              {(scrolled || true) && <HoverLabel text={link.label} />}
+              {/* Only appears after navbar shrinks */}
+              {scrolled && <HoverLabel>{link.label}</HoverLabel>}
             </div>
           );
         })}
 
-        {/* THEME */}
+        {/* Theme */}
         <div className="group relative shrink-0">
-          <ThemeToggle className="cursor-pointer border-0 bg-transparent hover:bg-transparent!" />
+          <ThemeToggle className="cursor-pointer border-0 bg-transparent" />
 
-          <HoverLabel text="Theme" />
+          {scrolled && <HoverLabel>Theme</HoverLabel>}
         </div>
 
-        {/* LOGOUT */}
+        {/* Logout */}
         <div className="group relative shrink-0">
           <button
             type="button"
@@ -170,7 +168,7 @@ export function CapsuleNavbar({ role }: CapsuleNavbarProps) {
             <LogOut className="h-4 w-4" />
           </button>
 
-          <HoverLabel text="Logout" />
+          {scrolled && <HoverLabel>Logout</HoverLabel>}
         </div>
       </nav>
     </header>
