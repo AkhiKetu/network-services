@@ -13,6 +13,9 @@ interface LoginModalProps {
   onClose: () => void;
 }
 
+const INPUT_CLASS =
+  "h-11 border-white/40 bg-white/45 shadow-sm backdrop-blur-sm placeholder:text-slate-400 focus-visible:border-primary/60 dark:border-white/10 dark:bg-white/[0.06] dark:placeholder:text-white/30";
+
 export function LoginModal({ open, onClose }: LoginModalProps) {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -31,22 +34,23 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
     setError("");
     setShowForgot(false);
 
+    const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
     };
 
     window.addEventListener("keydown", handleEscape);
 
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleEscape);
     };
   }, [open, onClose]);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setError("");
     setLoading(true);
 
@@ -55,7 +59,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
 
       onClose();
       router.push(
-        user.role === "admin" ? "/dashboard/admin" : "/dashboard/user",
+        user.role === "admin" ? "/dashboard/admin" : "/dashboard/user"
       );
     } catch {
       setError("Invalid phone number or password. Please try again.");
@@ -64,166 +68,158 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
     }
   };
 
-  const inputClass =
-    "bg-white/40 border-white/30 backdrop-blur-md dark:bg-white/[0.06] dark:border-white/10";
-
   return (
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-100 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="login-modal-title"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          transition={{ duration: 0.18 }}
         >
-          {/* Overlay */}
-          <button
+          {/* BACKDROP */}
+          <motion.button
             type="button"
             aria-label="Close login"
             onClick={onClose}
-            className="absolute inset-0 cursor-pointer bg-black/50 backdrop-blur-sm dark:bg-black/70"
+            className="absolute inset-0 cursor-default bg-black/55"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
           />
 
-          {/* Modal */}
+          {/* GLASS MODAL */}
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.97 }}
+            initial={{ opacity: 0, y: 22, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.97 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="
-              relative z-10 w-full max-w-sm
-              rounded-2xl border border-white/30
-              bg-white/65 p-6
-              shadow-xl backdrop-blur-2xl
-              dark:border-white/10
-              dark:bg-zinc-900/70
-            "
+            exit={{ opacity: 0, y: 16, scale: 0.98 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="relative z-10 w-full max-w-sm overflow-hidden rounded-3xl border border-white/45 bg-white/55 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-2xl dark:border-white/10 dark:bg-zinc-950/60"
           >
-            {/* Close */}
+            {/* subtle glass shine */}
+            <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/90 to-transparent dark:via-white/30" />
+
             <button
               type="button"
               onClick={onClose}
               aria-label="Close login"
-              className="
-                absolute right-4 top-4
-                flex h-8 w-8 cursor-pointer items-center justify-center
-                rounded-full
-                text-muted-foreground
-                transition-all duration-200
-                hover:bg-black/5 hover:text-foreground
-                dark:hover:bg-white/10
-              "
+              className="absolute right-4 top-4 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground dark:hover:bg-white/10"
             >
               <X className="h-4 w-4" />
             </button>
 
-            {/* Header */}
-            <div className="mb-6 text-center">
+            {/* HEADER */}
+            <div className="mb-5 text-center">
               <img
                 src="/ccnetworks-logo-transparent.png"
                 alt="Creative Cable & Networks"
-                className="mx-auto mb-2 h-32 w-32 object-contain"
+                className="mx-auto mb-0 h-28 w-28 object-contain"
               />
 
               <h2
                 id="login-modal-title"
-                className="text-2xl font-bold text-foreground"
+                className="text-2xl font-bold tracking-tight text-foreground"
               >
-                Login
+                {showForgot ? "Reset Password" : "Login"}
               </h2>
 
               <p className="mt-1 text-sm text-muted-foreground">
-                Sign in to your Creative Cable & Networks account.
+                {showForgot
+                  ? "Contact support with your registered phone number."
+                  : "Sign in to your Creative Cable & Networks account."}
               </p>
             </div>
 
             {!showForgot ? (
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Phone */}
                 <div>
-                  <label className="mb-2 flex items-center gap-2 text-sm font-medium">
-                    <Phone className="h-4 w-4" />
+                  <label
+                    htmlFor="login-phone"
+                    className="mb-2 flex items-center gap-2 text-sm font-medium"
+                  >
+                    <Phone className="h-4 w-4 text-primary" />
                     Phone Number
                   </label>
 
                   <Input
+                    id="login-phone"
                     type="tel"
                     inputMode="numeric"
-                    placeholder="01-XXXXXXXXX"
+                    autoComplete="tel"
+                    placeholder="01XXXXXXXXX"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(event) => setPhone(event.target.value)}
                     required
                     autoFocus
-                    className={inputClass}
+                    className={INPUT_CLASS}
                   />
                 </div>
 
-                {/* Password */}
                 <div>
                   <div className="mb-2 flex items-center justify-between">
-                    <label className="flex items-center gap-2 text-sm font-medium">
-                      <Lock className="h-4 w-4" />
+                    <label
+                      htmlFor="login-password"
+                      className="flex items-center gap-2 text-sm font-medium"
+                    >
+                      <Lock className="h-4 w-4 text-primary" />
                       Password
                     </label>
 
                     <button
                       type="button"
-                      onClick={() => setShowForgot(true)}
-                      className="cursor-pointer text-xs text-primary hover:text-primary/70"
+                      onClick={() => {
+                        setError("");
+                        setShowForgot(true);
+                      }}
+                      className="cursor-pointer text-xs font-medium text-primary transition-colors hover:text-primary/70"
                     >
                       Forgot password?
                     </button>
                   </div>
 
                   <Input
+                    id="login-password"
                     type="password"
+                    autoComplete="current-password"
                     placeholder="••••••••"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(event) => setPassword(event.target.value)}
                     required
-                    className={inputClass}
+                    className={INPUT_CLASS}
                   />
                 </div>
 
-                {/* Error */}
                 {error && (
-                  <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-400">
+                  <p
+                    role="alert"
+                    className="rounded-xl border border-red-500/15 bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-400"
+                  >
                     {error}
                   </p>
                 )}
 
-                {/* Login */}
                 <Button
                   type="submit"
                   size="lg"
                   disabled={loading}
-                  className="
-                    w-full cursor-pointer
-                    bg-sky-500 text-slate-900
-                    font-semibold
-                    shadow-sm
-                    transition-all duration-200
-                    hover:-translate-y-0.5
-                    hover:bg-sky-300
-                    hover:shadow-md
-                    active:translate-y-0
-                    dark:bg-white
-                    dark:text-black
-                    dark:font-bold
-                    dark:hover:bg-white/90
-                  "
+                  className="h-11 w-full cursor-pointer bg-sky-500 font-semibold text-slate-950 shadow-sm transition-[transform,background-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:bg-sky-400 hover:shadow-md active:translate-y-0 dark:bg-white dark:text-black dark:hover:bg-white/90"
                 >
                   {loading ? "Logging in..." : "Login"}
                 </Button>
 
-                <p className="text-center text-xs text-muted-foreground">
+                <p className="text-center text-xs leading-5 text-muted-foreground">
                   New here? Your account is created by an admin — contact
                   support to get connected.
                 </p>
               </form>
             ) : (
               <div className="space-y-4">
-                <p className="text-center text-sm text-muted-foreground">
+                <p className="rounded-xl border border-white/30 bg-white/30 p-4 text-center text-sm leading-6 text-muted-foreground dark:border-white/10 dark:bg-white/[0.04]">
                   Password resets are handled by an admin. Contact support with
                   your registered phone number and we&apos;ll reset it for you.
                 </p>
@@ -232,7 +228,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
                   type="button"
                   variant="outline"
                   onClick={() => setShowForgot(false)}
-                  className="w-full cursor-pointer"
+                  className="h-11 w-full cursor-pointer bg-white/30 backdrop-blur-sm dark:bg-white/[0.04]"
                 >
                   Back to login
                 </Button>
