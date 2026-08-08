@@ -336,7 +336,7 @@ export default function Home() {
 
             <div className="grid gap-4 md:grid-cols-3">
               <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/15 dark:bg-black">
-                <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-3">
+                <div className="mb-4 inline-flex rounded-xl p-1">
                   <Phone className="h-5 w-5 text-primary" />
                 </div>
 
@@ -345,12 +345,12 @@ export default function Home() {
                 </h3>
 
                 <p className="text-sm text-slate-600 dark:text-white/60">
-                  01894852404
+                  +880-1556545295
                 </p>
               </article>
 
               <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/15 dark:bg-black">
-                <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-3">
+                <div className="mb-4 inline-flex rounded-xl p-1">
                   <Mail className="h-5 w-5 text-primary" />
                 </div>
 
@@ -359,12 +359,12 @@ export default function Home() {
                 </h3>
 
                 <p className="break-all text-sm text-slate-600 dark:text-white/60">
-                  akhiketu2003@gmail.com
+                  creativecisc@gmail.com
                 </p>
               </article>
 
               <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/15 dark:bg-black">
-                <div className="mb-4 inline-flex rounded-xl bg-primary/10 p-3">
+                <div className="mb-4 inline-flex rounded-xl p-1">
                   <MapPin className="h-5 w-5 text-primary" />
                 </div>
 
@@ -373,8 +373,7 @@ export default function Home() {
                 </h3>
 
                 <p className="text-sm text-slate-600 dark:text-white/60">
-                  F Block, 2nd Floor, House # 12, Road # 10, Sector # 11,
-                  Uttara, Dhaka-1230
+                  Rajdip, Rangamati
                 </p>
               </article>
             </div>
