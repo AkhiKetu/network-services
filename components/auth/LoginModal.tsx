@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { X, Phone, Lock } from "lucide-react";
+import { X, Mail, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/context/AuthContext";
@@ -17,7 +17,7 @@ const INPUT_CLASS =
   "h-11 border-white/40 bg-white/45 shadow-sm backdrop-blur-sm placeholder:text-slate-400 focus-visible:border-primary/60 dark:border-white/10 dark:bg-white/[0.06] dark:placeholder:text-white/30";
 
 export function LoginModal({ open, onClose }: LoginModalProps) {
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,7 +29,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
   useEffect(() => {
     if (!open) return;
 
-    setPhone("");
+    setEmail("");
     setPassword("");
     setError("");
     setShowForgot(false);
@@ -55,14 +55,16 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
     setLoading(true);
 
     try {
-      const user = await login(phone.trim(), password);
+      const user = await login(email.trim(), password);
 
       onClose();
       router.push(
-        user.role === "admin" ? "/dashboard/admin" : "/dashboard/user"
+        user.role === "owner" || user.role === "admin"
+          ? "/dashboard/admin"
+          : "/dashboard/user"
       );
-    } catch {
-      setError("Invalid phone number or password. Please try again.");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Unable to sign in. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -130,7 +132,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
 
               <p className="mt-1 text-sm text-muted-foreground">
                 {showForgot
-                  ? "Contact support with your registered phone number."
+                  ? "Contact support with your registered email address."
                   : "Sign in to your Creative Cable & Networks account."}
               </p>
             </div>
@@ -139,21 +141,20 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label
-                    htmlFor="login-phone"
+                    htmlFor="login-email"
                     className="mb-2 flex items-center gap-2 text-sm font-medium"
                   >
-                    <Phone className="h-4 w-4 text-primary" />
-                    Phone Number
+                    <Mail className="h-4 w-4 text-primary" />
+                    Email
                   </label>
 
                   <Input
-                    id="login-phone"
-                    type="tel"
-                    inputMode="numeric"
-                    autoComplete="tel"
-                    placeholder="01XXXXXXXXX"
-                    value={phone}
-                    onChange={(event) => setPhone(event.target.value)}
+                    id="login-email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
                     required
                     autoFocus
                     className={INPUT_CLASS}
@@ -221,7 +222,7 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
               <div className="space-y-4">
                 <p className="rounded-xl border border-white/30 bg-white/30 p-4 text-center text-sm leading-6 text-muted-foreground dark:border-white/10 dark:bg-white/[0.04]">
                   Password resets are handled by an admin. Contact support with
-                  your registered phone number and we&apos;ll reset it for you.
+                  your registered email address and we&apos;ll reset it for you.
                 </p>
 
                 <Button

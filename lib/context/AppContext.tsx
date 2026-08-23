@@ -26,7 +26,7 @@ interface AppContextType {
 // Bump this whenever the shape of stored data changes (e.g. User fields).
 // Prevents old cached localStorage data from silently breaking the app
 // after an update.
-const DATA_VERSION = '4'
+const DATA_VERSION = '5'
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
 

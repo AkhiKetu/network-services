@@ -2,20 +2,13 @@
 
 import { useState } from 'react'
 import { useAuth } from '@/lib/context/AuthContext'
-import { useApp } from '@/lib/context/AppContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { User, Phone, Settings as SettingsIcon, Database, Shield, Plus, X, Check, Pencil } from 'lucide-react'
 
 export default function AdminSettings() {
   const { currentUser, updateProfile } = useAuth()
-  const { users, addUser, isPhoneTaken } = useApp()
-
-  const [showAddAdmin, setShowAddAdmin] = useState(false)
-  const [newName, setNewName] = useState('')
-  const [newPhone, setNewPhone] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [formError, setFormError] = useState('')
+  const [profileError, setProfileError] = useState('')
 
   // Editable display name. The account starts out with a hardcoded name
   // (set in mock data) — this lets the admin finalize it to their own.
@@ -36,46 +29,18 @@ export default function AdminSettings() {
     setNameDraft('')
   }
 
-  const saveName = (e: React.FormEvent) => {
+  const saveName = async (e: React.FormEvent) => {
     e.preventDefault()
     const trimmed = nameDraft.trim()
     if (!trimmed) return
-    updateProfile({ name: trimmed })
-    setIsEditingName(false)
-    setNameSaved(true)
-  }
-
-  const admins = users.filter(u => u.role === 'admin')
-
-  const handleAddAdmin = (e: React.FormEvent) => {
-    e.preventDefault()
-    setFormError('')
-
-    const phone = newPhone.trim()
-    if (!phone || !newName.trim() || !newPassword) {
-      setFormError('All fields are required.')
-      return
+    setProfileError('')
+    try {
+      await updateProfile({ name: trimmed })
+      setIsEditingName(false)
+      setNameSaved(true)
+    } catch (error) {
+      setProfileError(error instanceof Error ? error.message : 'Unable to update profile.')
     }
-    if (isPhoneTaken(phone)) {
-      setFormError('This phone number is already registered.')
-      return
-    }
-
-    addUser({
-      id: `admin-${Date.now()}`,
-      phone,
-      password: newPassword,
-      name: newName.trim(),
-      role: 'admin',
-      subscriptionStatus: 'active',
-      joinDate: new Date().toISOString().split('T')[0],
-      createdBy: currentUser.id
-    })
-
-    setNewName('')
-    setNewPhone('')
-    setNewPassword('')
-    setShowAddAdmin(false)
   }
 
   return (
@@ -141,6 +106,8 @@ export default function AdminSettings() {
             )}
           </div>
 
+          {profileError && <p className="text-xs text-red-600 dark:text-red-400">{profileError}</p>}
+
           {/* Phone */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-2">
@@ -172,53 +139,12 @@ export default function AdminSettings() {
           <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Shield className="w-6 h-6" /> Admin Accounts
           </h2>
-          <Button size="sm" onClick={() => setShowAddAdmin(!showAddAdmin)} className="gap-2">
-            {showAddAdmin ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-            {showAddAdmin ? 'Cancel' : 'Add Admin'}
-          </Button>
+          <Button size="sm" disabled className="gap-2"><Plus className="w-4 h-4" /> Add Admin</Button>
         </div>
         <p className="text-sm text-muted-foreground -mt-4">
-          Only existing admins can create new admin accounts.
+          Admin provisioning is intentionally unavailable until a server-only Supabase workflow is added. Auth users must never be created from browser code.
         </p>
 
-        {showAddAdmin && (
-          <form onSubmit={handleAddAdmin} className="space-y-4 border-t border-border pt-4">
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Full Name</label>
-                <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Admin Name" required />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Phone Number (login ID)</label>
-                <Input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="01XXXXXXXXX" required />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Temporary Password</label>
-              <Input type="text" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Set a password" required />
-            </div>
-            {formError && (
-              <div className="p-3 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 rounded-lg text-sm">
-                {formError}
-              </div>
-            )}
-            <Button type="submit" className="w-full">Create Admin</Button>
-          </form>
-        )}
-
-        <div className="space-y-2">
-          {admins.map(admin => (
-            <div key={admin.id} className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
-              <div>
-                <p className="font-medium text-foreground">{admin.name}</p>
-                <p className="text-xs text-muted-foreground">{admin.phone}</p>
-              </div>
-              {admin.id === currentUser.id && (
-                <span className="text-xs text-primary font-medium">You</span>
-              )}
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* System Settings */}

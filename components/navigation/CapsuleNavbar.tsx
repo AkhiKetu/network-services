@@ -18,7 +18,7 @@ import { ThemeToggle } from "@/components/common/ThemeToggle";
 import { useAuth } from "@/lib/context/AuthContext";
 
 interface CapsuleNavbarProps {
-  role: "user" | "admin";
+  role: "user" | "admin" | "owner";
 }
 
 const ADMIN_LINKS = [
@@ -79,7 +79,8 @@ export function CapsuleNavbar({ role }: CapsuleNavbarProps) {
   const { logout } = useAuth();
   const router = useRouter();
 
-  const links = role === "admin" ? ADMIN_LINKS : USER_LINKS;
+  const isPrivileged = role === "owner" || role === "admin";
+  const links = isPrivileged ? ADMIN_LINKS : USER_LINKS;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -94,8 +95,12 @@ export function CapsuleNavbar({ role }: CapsuleNavbarProps) {
     };
   }, []);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Unable to sign out:", error);
+    }
     router.push("/");
   };
 
@@ -110,7 +115,7 @@ export function CapsuleNavbar({ role }: CapsuleNavbarProps) {
       >
         {/* Logo */}
         <Link
-          href={`/dashboard/${role}`}
+          href={isPrivileged ? "/dashboard/admin" : "/dashboard/user"}
           aria-label="Creative Cable & Networks"
           className="shrink-0 cursor-pointer px-1"
         >

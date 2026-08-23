@@ -1,79 +1,230 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect } from 'react'
-import { User } from '@/lib/types'
-import { useApp } from '@/lib/context/AppContext'
+import React, { createContext, useContext, useEffect, useState } from 'react'
+
+import { createClient } from '@/lib/supabase/client'
+import type { User } from '@/lib/types'
+
+interface ProfileRow {
+  id: string
+  customer_id: string | null
+  name: string | null
+  phone: string | null
+  zone: string | null
+  role: User['role']
+  created_at: string | null
+  deleted_at: string | null
+}
 
 interface AuthContextType {
   currentUser: User | null
   isLoading: boolean
-  login: (phone: string, password: string) => Promise<User>
-  logout: () => void
-  updateProfile: (updates: Partial<Pick<User, 'name'>>) => void
+  loading: boolean
+  login: (email: string, password: string) => Promise<User>
+  logout: () => Promise<void>
+  updateProfile: (updates: Partial<Pick<User, 'name'>>) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { users, updateUser } = useApp()
+function toCurrentUser(profile: ProfileRow): User {
+  return {
+    id: profile.id,
+    customer_id: profile.customer_id,
+    customerId: profile.customer_id ?? undefined,
+    name: profile.name ?? 'CCNetworks customer',
+    phone: profile.phone ?? '',
+    zone: profile.zone ?? undefined,
+    role: profile.role,
+    joinDate: profile.created_at ?? new Date().toISOString(),
+    subscriptionStatus: 'active',
+    deleted_at: profile.deleted_at,
+  }
+}
+
+function readableAuthError(message: string) {
+  if (/invalid login credentials/i.test(message)) {
+    return 'Invalid email or password.'
+  }
+
+  return message
+}
+
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
+  const loadProfile = async (userId: string) => {
+    const supabase = createClient()
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, customer_id, name, phone, zone, role, created_at, deleted_at')
+      .eq('id', userId)
+      .maybeSingle()
+
+    if (error) {
+      throw new Error(`Unable to load profile: ${error.message}`)
+    }
+
+    if (!data) {
+      throw new Error('No portal profile found for this account.')
+    }
+
+    if (data.deleted_at) {
+      throw new Error('This account has been deactivated.')
+    }
+
+    return toCurrentUser(data as ProfileRow)
+  }
+
   useEffect(() => {
-    const savedUser = localStorage.getItem('currentUser')
-    if (savedUser) {
+    const supabase = createClient()
+    let active = true
+
+    const restoreSession = async () => {
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession()
+
+      if (!active) return
+
+      if (error || !session?.user) {
+        setCurrentUser(null)
+        setIsLoading(false)
+        return
+      }
+
       try {
-        const parsed = JSON.parse(savedUser)
-        // Older cached sessions won't have a phone field — discard those
-        // rather than restoring a broken session.
-        if (parsed && typeof parsed.phone === 'string') {
-          setCurrentUser(parsed)
-        } else {
-          localStorage.removeItem('currentUser')
+        const profile = await loadProfile(session.user.id)
+
+        if (active) {
+          setCurrentUser(profile)
         }
       } catch (error) {
-        console.error('Error parsing saved user:', error)
-        localStorage.removeItem('currentUser')
+        console.error(error)
+
+        if (active) {
+          setCurrentUser(null)
+        }
+      } finally {
+        if (active) {
+          setIsLoading(false)
+        }
       }
     }
-    setIsLoading(false)
+
+    void restoreSession()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!active) return
+
+      if (event === 'SIGNED_OUT' || !session?.user) {
+        setCurrentUser(null)
+        setIsLoading(false)
+        return
+      }
+
+      if (
+        event === 'SIGNED_IN' ||
+        event === 'TOKEN_REFRESHED' ||
+        event === 'USER_UPDATED'
+      ) {
+        void loadProfile(session.user.id)
+          .then(profile => {
+            if (active) setCurrentUser(profile)
+          })
+          .catch(error => {
+            console.error(error)
+            if (active) setCurrentUser(null)
+          })
+          .finally(() => {
+            if (active) setIsLoading(false)
+          })
+      }
+    })
+
+    return () => {
+      active = false
+      subscription.unsubscribe()
+    }
   }, [])
 
-  // Login is unified for both roles: the phone number is the account id,
-  // and the account's own role (set at creation time) decides where it lands.
-  const login = async (phone: string, password: string) => {
+  const login = async (email: string, password: string) => {
     setIsLoading(true)
+
     try {
-      const user = users.find(u => u.phone === phone && u.password === password)
-      if (!user) {
-        throw new Error('Invalid phone number or password')
+      const supabase = createClient()
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (error || !data.user) {
+        throw new Error(
+          readableAuthError(error?.message ?? 'Unable to sign in.')
+        )
       }
-      setCurrentUser(user)
-      localStorage.setItem('currentUser', JSON.stringify(user))
-      return user
+
+      const profile = await loadProfile(data.user.id)
+
+      setCurrentUser(profile)
+
+      return profile
     } finally {
       setIsLoading(false)
     }
   }
 
-  const logout = () => {
+  const logout = async () => {
+    const supabase = createClient()
+
+    const { error } = await supabase.auth.signOut()
+
     setCurrentUser(null)
-    localStorage.removeItem('currentUser')
+
+    if (error) {
+      throw new Error(`Unable to sign out: ${error.message}`)
+    }
   }
 
-  // Lets the logged-in account "finalize" details set at creation time
-  // (e.g. the hardcoded initial admin name) into whatever they choose.
-  // Keeps the active session and the shared users list both in sync.
-  const updateProfile = (updates: Partial<Pick<User, 'name'>>) => {
-    if (!currentUser) return
-    const updated = { ...currentUser, ...updates }
-    setCurrentUser(updated)
-    localStorage.setItem('currentUser', JSON.stringify(updated))
-    updateUser(updated)
+  const updateProfile = async (
+    updates: Partial<Pick<User, 'name'>>
+  ) => {
+    if (!currentUser || !updates.name?.trim()) return
+
+    const name = updates.name.trim()
+    const supabase = createClient()
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ name })
+      .eq('id', currentUser.id)
+
+    if (error) {
+      throw new Error(`Unable to update profile: ${error.message}`)
+    }
+
+    setCurrentUser(user =>
+      user ? { ...user, name } : null
+    )
   }
 
   return (
-    <AuthContext.Provider value={{ currentUser, isLoading, login, logout, updateProfile }}>
+    <AuthContext.Provider
+      value={{
+        currentUser,
+        isLoading,
+        loading: isLoading,
+        login,
+        logout,
+        updateProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )
@@ -81,8 +232,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext)
-  if (context === undefined) {
+
+  if (!context) {
     throw new Error('useAuth must be used within AuthProvider')
   }
+
   return context
 }

@@ -1,17 +1,20 @@
 export interface User {
   id: string
+  /** Supabase profile column; customerId remains for the local business-data prototype. */
+  customer_id?: string | null
   customerId?: string
   phone: string
-  password: string
   email?: string
   name: string
-  role: 'user' | 'admin'
+  role: 'owner' | 'admin' | 'user'
   subscriptionStatus: 'active' | 'inactive' | 'expired'
   joinDate: string
   totalPaid?: number
   createdBy?: string
   zone?: string
   deleted?: boolean
+  deleted_at?: string | null
+  created_at?: string
 }
 
 export interface Connection {

@@ -1,51 +1,19 @@
-'use client'
+import { redirect } from 'next/navigation'
 
-import { useAuth } from '@/lib/context/AuthContext'
-import { usePathname, useRouter } from 'next/navigation'
-import { CapsuleNavbar } from '@/components/navigation/CapsuleNavbar'
-import { useEffect, useState } from 'react'
+import { DashboardShell } from '@/components/navigation/DashboardShell'
+import { createClient } from '@/lib/supabase/server'
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const { currentUser, isLoading } = useAuth()
-  const router = useRouter()
-  const pathname = usePathname()
-  const [mounted, setMounted] = useState(false)
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const supabase = await createClient()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) redirect('/')
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role, deleted_at')
+    .eq('id', user.id)
+    .maybeSingle()
 
-  useEffect(() => {
-    if (!isLoading && !currentUser && mounted) {
-      router.push('/')
-      return
-    }
-    if (!isLoading && currentUser && mounted) {
-      const requestedRole = pathname.startsWith('/dashboard/admin') ? 'admin' : 'user'
-      if (currentUser.role !== requestedRole) {
-        router.replace(`/dashboard/${currentUser.role}`)
-      }
-    }
-  }, [isLoading, currentUser, router, mounted, pathname])
-
-  if (!mounted || isLoading || !currentUser) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="min-h-screen bg-transparent text-slate-950 dark:text-white">
-      <CapsuleNavbar role={currentUser.role} />
-      <main className="pt-24 sm:pt-28">
-        {children}
-      </main>
-    </div>
-  )
+  if (profileError || !profile || profile.deleted_at) redirect('/')
+  return <DashboardShell role={profile.role}>{children}</DashboardShell>
 }
