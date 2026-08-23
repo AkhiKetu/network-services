@@ -15,6 +15,7 @@ interface AppContextType {
   addBilling: (billing: Billing) => void
   addUser: (user: User) => void
   updateUser: (user: User) => void
+  deleteUser: (id: string) => void
   isPhoneTaken: (phone: string) => boolean
   getUserConnections: (userId: string) => Connection[]
   getUserBillings: (userId: string) => Billing[]
@@ -25,7 +26,7 @@ interface AppContextType {
 // Bump this whenever the shape of stored data changes (e.g. User fields).
 // Prevents old cached localStorage data from silently breaking the app
 // after an update.
-const DATA_VERSION = '2'
+const DATA_VERSION = '4'
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
 
@@ -34,6 +35,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [connections, setConnections] = useState<Connection[]>([])
   const [billings, setBillings] = useState<Billing[]>([])
   const [notifications, setNotifications] = useState<Notification[]>([])
+  const [isHydrated, setIsHydrated] = useState(false)
 
   useEffect(() => {
     const storedVersion = localStorage.getItem('appDataVersion')
@@ -52,6 +54,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setConnections(mockConnections)
       setBillings(mockBillings)
       setNotifications(mockNotifications)
+      setIsHydrated(true)
       return
     }
 
@@ -71,24 +74,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setConnections(mockConnections)
       setBillings(mockBillings)
       setNotifications(mockNotifications)
+    } finally {
+      setIsHydrated(true)
     }
   }, [])
 
   useEffect(() => {
+    if (!isHydrated) return
     localStorage.setItem('appUsers', JSON.stringify(users))
-  }, [users])
+  }, [isHydrated, users])
 
   useEffect(() => {
+    if (!isHydrated) return
     localStorage.setItem('appConnections', JSON.stringify(connections))
-  }, [connections])
+  }, [connections, isHydrated])
 
   useEffect(() => {
+    if (!isHydrated) return
     localStorage.setItem('appBillings', JSON.stringify(billings))
-  }, [billings])
+  }, [billings, isHydrated])
 
   useEffect(() => {
+    if (!isHydrated) return
     localStorage.setItem('appNotifications', JSON.stringify(notifications))
-  }, [notifications])
+  }, [isHydrated, notifications])
 
   const addConnection = (connection: Connection) => {
     setConnections(prev => [...prev, connection])
@@ -111,7 +120,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }
 
   const deleteConnection = (id: string) => {
-    setConnections(prev => prev.filter(conn => conn.id !== id))
+    setConnections(prev => prev.map(conn => conn.id === id ? { ...conn, deleted: true } : conn))
   }
 
   const addBilling = (billing: Billing) => {
@@ -123,8 +132,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setUsers(prev => prev.map(u => (u.id === updatedUser.id ? updatedUser : u)))
   }
 
+  const deleteUser = (id: string) => {
+    setUsers(prev => prev.map(user => user.id === id ? { ...user, deleted: true, subscriptionStatus: 'inactive' } : user))
+    setConnections(prev => prev.map(connection => connection.userId === id ? { ...connection, deleted: true } : connection))
+  }
+
   const isPhoneTaken = (phone: string) => {
-    return users.some(u => u.phone === phone)
+    return users.some(u => u.phone === phone && !u.deleted)
   }
 
   const addUser = (user: User) => {
@@ -142,7 +156,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }
 
   const getUserConnections = (userId: string) => {
-    return connections.filter(conn => conn.userId === userId)
+    return connections.filter(conn => conn.userId === userId && !conn.deleted)
   }
 
   const getUserBillings = (userId: string) => {
@@ -171,6 +185,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addBilling,
       addUser,
       updateUser,
+      deleteUser,
       isPhoneTaken,
       getUserConnections,
       getUserBillings,

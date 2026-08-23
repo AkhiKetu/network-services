@@ -10,7 +10,6 @@ import {
   Wifi,
 } from "lucide-react";
 
-import DarkModeLandingBackground from "@/components/animation/DarkModeBackground";
 import { ConnectionCard } from "@/components/cards/ConnectionCard";
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/lib/context/AppContext";
@@ -93,13 +92,8 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <main className="relative isolate min-h-screen overflow-hidden pb-10 pt-20 sm:pt-24">
-      {/* SAME BACKGROUND AS LANDING PAGE */}
-      <DarkModeLandingBackground />
-
-      <div
-        className={`${PAGE_WIDTH} relative z-10 space-y-5 sm:space-y-6`}
-      >
+    <main className="min-h-screen pb-10 pt-4 sm:pb-12 sm:pt-6">
+      <div className={`${PAGE_WIDTH} space-y-5 sm:space-y-6`}>
         {/* WELCOME */}
         <section className={`rounded-3xl p-5 sm:p-7 ${CARD}`}>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

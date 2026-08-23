@@ -92,7 +92,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="relative isolate min-h-screen overflow-x-hidden bg-white text-slate-950 dark:bg-black dark:text-white">
+    <div className="relative isolate min-h-screen overflow-x-hidden bg-transparent text-slate-950 dark:text-white">
       {/*
         This component now uses a static CSS background.
         It no longer runs a full-screen Lottie animation.

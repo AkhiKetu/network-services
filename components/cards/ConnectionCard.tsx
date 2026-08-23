@@ -10,7 +10,6 @@ import { Wifi, AlertTriangle, CheckCircle, XCircle } from 'lucide-react'
 interface ConnectionCardProps {
   connection: Connection
   onRenew?: (connection: Connection) => void
-  onDelete?: (id: string) => void
   showUser?: boolean
   userName?: string
 }
@@ -18,7 +17,6 @@ interface ConnectionCardProps {
 export const ConnectionCard: React.FC<ConnectionCardProps> = ({
   connection,
   onRenew,
-  onDelete,
   showUser = false,
   userName
 }) => {
@@ -27,6 +25,9 @@ export const ConnectionCard: React.FC<ConnectionCardProps> = ({
   const isExpiringSoonStatus = isExpiringSoon(connection.expirationDate)
 
   const getStatusBadge = () => {
+    if (connection.deleted) {
+      return <Badge variant="secondary" className="flex items-center gap-1 bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300"><XCircle className="w-3 h-3" /> Deleted</Badge>
+    }
     if (isExpiredStatus) {
       return <Badge variant="destructive" className="flex items-center gap-1"><XCircle className="w-3 h-3" /> Expired</Badge>
     }
@@ -37,15 +38,15 @@ export const ConnectionCard: React.FC<ConnectionCardProps> = ({
   }
 
   return (
-    <div className="bg-card border border-border rounded-lg p-6 space-y-4">
+    <article className="space-y-4 rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-5">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3 flex-1">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
           <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
             <Wifi className="w-5 h-5 text-primary" />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-foreground">{connection.name}</h3>
+            <h3 className="truncate font-semibold text-foreground">{connection.packageName || connection.name}</h3>
             {showUser && userName && (
               <p className="text-xs text-muted-foreground">{userName}</p>
             )}
@@ -55,7 +56,7 @@ export const ConnectionCard: React.FC<ConnectionCardProps> = ({
       </div>
 
       {/* Details */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
         <div>
           <p className="text-xs text-muted-foreground mb-1">Activation Date</p>
           <p className="font-medium text-foreground">{formatDate(connection.activationDate)}</p>
@@ -76,37 +77,18 @@ export const ConnectionCard: React.FC<ConnectionCardProps> = ({
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex gap-2 pt-2">
-        {!isExpiredStatus && onRenew && (
+      {onRenew && (
+        <div className="flex border-t border-border pt-3">
           <Button
             size="sm"
-            variant="outline"
+            variant={isExpiredStatus ? 'default' : 'outline'}
             onClick={() => onRenew(connection)}
-            className="flex-1"
+            className="flex-1 cursor-pointer"
           >
-            Renew
+            {isExpiredStatus ? 'Reactivate' : 'Renew'}
           </Button>
-        )}
-        {isExpiredStatus && onRenew && (
-          <Button
-            size="sm"
-            className="flex-1"
-            onClick={() => onRenew(connection)}
-          >
-            Reactivate
-          </Button>
-        )}
-        {onDelete && (
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={() => onDelete(connection.id)}
-          >
-            Delete
-          </Button>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </article>
   )
 }

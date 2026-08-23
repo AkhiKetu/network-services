@@ -11,7 +11,7 @@ export default function UserSettings() {
   if (!currentUser) return null
 
   return (
-    <div className="p-8 space-y-8">
+    <main className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-10 pt-4 sm:space-y-6 sm:px-6 sm:pt-6">
       {/* Header */}
       <div>
         <h1 className="text-4xl font-bold text-foreground">Account Settings</h1>
@@ -117,6 +117,6 @@ export default function UserSettings() {
           Delete Account (Coming Soon)
         </Button>
       </div>
-    </div>
+    </main>
   )
 }

@@ -19,9 +19,11 @@ type PaymentMethod = "Cash" | "bKash" | "Nagad" | "Bank";
 
 type CustomerOption = {
   id: string;
+  customerId: string;
   name: string;
   phone: string;
   zone: string;
+  packageName: string;
   monthlyBill: number;
 };
 
@@ -38,7 +40,7 @@ type CollectionRecord = {
   createdAt: string;
 };
 
-const STORAGE_KEY = "ccnetworks-collections";
+const STORAGE_KEY = "ccnetworks-collections-v2";
 
 const METHODS: {
   label: PaymentMethod;
@@ -126,15 +128,19 @@ export default function CollectionsPage() {
           | {
               userId: string;
               status: string;
+              name?: string;
+              packageName?: string;
               monthlyPrice?: number;
             }
           | undefined;
 
         return {
           id: user.id,
+          customerId: user.customerId ?? user.id,
           name: user.name,
           phone: user.phone,
           zone: userWithZone.zone ?? userWithZone.area ?? "Unassigned",
+          packageName: connection?.packageName ?? connection?.name ?? "No package",
           monthlyBill: connection?.monthlyPrice ?? 0,
         };
       });
@@ -419,10 +425,18 @@ export default function CollectionsPage() {
               {selectedCustomer && (
                 <div className="rounded-2xl bg-muted/50 p-3 text-sm">
                   <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">Customer ID</span>
+                    <span className="font-medium">{selectedCustomer.customerId}</span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-3">
                     <span className="text-muted-foreground">Zone</span>
                     <span className="font-medium">
                       {selectedCustomer.zone}
                     </span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-3">
+                    <span className="text-muted-foreground">Package</span>
+                    <span className="font-medium">{selectedCustomer.packageName}</span>
                   </div>
                   <div className="mt-2 flex items-center justify-between gap-3">
                     <span className="text-muted-foreground">

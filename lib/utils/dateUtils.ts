@@ -16,7 +16,8 @@ export const getDaysRemaining = (expirationDate: string): number => {
 }
 
 export const isExpiringSoon = (expirationDate: string, days: number = 30): boolean => {
-  return getDaysRemaining(expirationDate) <= days && getDaysRemaining(expirationDate) > 0
+  const daysRemaining = getDaysRemaining(expirationDate)
+  return daysRemaining <= days && daysRemaining > 0
 }
 
 export const isExpired = (expirationDate: string): boolean => {
@@ -27,3 +28,12 @@ export const getMonthFromDate = (date: string): string => {
   const d = new Date(date)
   return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 }
+
+export const addCalendarMonth = (date = new Date()): Date => {
+  const next = new Date(date)
+  next.setMonth(next.getMonth() + 1)
+  return next
+}
+
+export const getRenewalDate = (date = new Date()): string =>
+  addCalendarMonth(date).toISOString().slice(0, 10)

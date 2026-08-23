@@ -29,7 +29,7 @@ export default function AdminAnalytics() {
   const averageRevenue = paidBillings > 0 ? (yearlyRevenue / 12).toFixed(2) : '0.00'
 
   return (
-    <div className="p-8 space-y-8">
+    <main className="mx-auto w-full max-w-6xl space-y-5 px-4 pb-10 pt-4 sm:space-y-6 sm:px-6 sm:pt-6">
       {/* Header */}
       <div>
         <h1 className="text-4xl font-bold text-foreground">Analytics & Reports</h1>
@@ -37,7 +37,7 @@ export default function AdminAnalytics() {
       </div>
 
       {/* Main Metrics */}
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
           title="Monthly Revenue"
           value={formatCurrency(monthlyRevenue)}
@@ -59,7 +59,7 @@ export default function AdminAnalytics() {
       </div>
 
       {/* User Metrics */}
-      <div className="grid md:grid-cols-4 gap-6">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Users"
           value={regularUsers.length}
@@ -87,7 +87,7 @@ export default function AdminAnalytics() {
       </div>
 
       {/* Billing Metrics */}
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid gap-4 lg:grid-cols-2">
         <div className="bg-card border border-border rounded-lg p-6">
           <h2 className="text-2xl font-bold text-foreground mb-6">Billing Summary</h2>
           <div className="space-y-4">
@@ -134,7 +134,7 @@ export default function AdminAnalytics() {
       </div>
 
       {/* Monthly Revenue Breakdown */}
-      <div className="bg-card border border-border rounded-lg p-6">
+      <div className="rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-5">
         <h2 className="text-2xl font-bold text-foreground mb-6">Monthly Revenue Breakdown</h2>
         {Object.keys(revenueByMonth).length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -151,7 +151,7 @@ export default function AdminAnalytics() {
       </div>
 
       {/* Top Users */}
-      <div className="bg-card border border-border rounded-lg p-6">
+      <div className="rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-5">
         <h2 className="text-2xl font-bold text-foreground mb-6">Top 5 Users by Revenue</h2>
         {topUsers.length > 0 ? (
           <div className="space-y-3">
@@ -174,6 +174,6 @@ export default function AdminAnalytics() {
           <p className="text-muted-foreground text-center py-8">No user data available</p>
         )}
       </div>
-    </div>
+    </main>
   )
 }

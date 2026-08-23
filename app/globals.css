@@ -48,8 +48,8 @@
 
 :root {
   color-scheme: light;
-  --background: #f8fafc;
-  --foreground: #1e293b;
+  --background: #ffffff;
+  --foreground: #111827;
   --card: #ffffff;
   --card-foreground: #1e293b;
   --popover: #ffffff;
@@ -84,18 +84,18 @@
 
 .dark {
   color-scheme: dark;
-  --background: #0f172a;
-  --foreground: #f1f5f9;
-  --card: #1e293b;
-  --card-foreground: #f1f5f9;
-  --popover: #1e293b;
-  --popover-foreground: #f1f5f9;
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #0b0b0b;
+  --card-foreground: #ffffff;
+  --popover: #0b0b0b;
+  --popover-foreground: #ffffff;
   --primary: #3b82f6;
-  --primary-foreground: #0f172a;
-  --secondary: #334155;
-  --secondary-foreground: #f1f5f9;
-  --muted: #475569;
-  --muted-foreground: #cbd5e1;
+  --primary-foreground: #ffffff;
+  --secondary: #171717;
+  --secondary-foreground: #ffffff;
+  --muted: #262626;
+  --muted-foreground: #a3a3a3;
   --accent: #06b6d4;
   --accent-foreground: #0f172a;
   --destructive: #ef4444;
@@ -107,13 +107,13 @@
   --chart-3: #10b981;
   --chart-4: #f59e0b;
   --chart-5: #ef4444;
-  --sidebar: #1e293b;
-  --sidebar-foreground: #f1f5f9;
+  --sidebar: #000000;
+  --sidebar-foreground: #ffffff;
   --sidebar-primary: #3b82f6;
-  --sidebar-primary-foreground: #0f172a;
-  --sidebar-accent: #334155;
-  --sidebar-accent-foreground: #f1f5f9;
-  --sidebar-border: #334155;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #171717;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #262626;
   --sidebar-ring: #3b82f6;
 }
 
@@ -127,8 +127,8 @@
 
 .light {
   color-scheme: light;
-  --background: #f8fafc;
-  --foreground: #1e293b;
+  --background: #ffffff;
+  --foreground: #111827;
   --card: #ffffff;
   --card-foreground: #1e293b;
   --popover: #ffffff;
@@ -172,6 +172,11 @@
 
   body {
     @apply bg-background text-foreground;
+    background-image:
+      radial-gradient(circle at 12% 0%, rgb(59 130 246 / 0.12), transparent 30rem),
+      radial-gradient(circle at 88% 18%, rgb(6 182 212 / 0.1), transparent 26rem),
+      linear-gradient(145deg, #f8fbff 0%, #ffffff 48%, #f3f8ff 100%);
+    background-attachment: fixed;
   }
 
   button,
@@ -180,6 +185,13 @@
   select {
     font: inherit;
   }
+}
+
+.dark body {
+  background-image:
+    radial-gradient(circle at 12% 0%, rgb(37 99 235 / 0.2), transparent 32rem),
+    radial-gradient(circle at 88% 18%, rgb(8 145 178 / 0.14), transparent 28rem),
+    linear-gradient(145deg, #050816 0%, #000000 52%, #07111f 100%);
 }
 
 @layer utilities {

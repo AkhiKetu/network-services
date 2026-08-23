@@ -1,7 +1,7 @@
 'use client'
 
 import { useAuth } from '@/lib/context/AuthContext'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { CapsuleNavbar } from '@/components/navigation/CapsuleNavbar'
 import { useEffect, useState } from 'react'
 
@@ -12,6 +12,7 @@ export default function DashboardLayout({
 }) {
   const { currentUser, isLoading } = useAuth()
   const router = useRouter()
+  const pathname = usePathname()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -21,8 +22,15 @@ export default function DashboardLayout({
   useEffect(() => {
     if (!isLoading && !currentUser && mounted) {
       router.push('/')
+      return
     }
-  }, [isLoading, currentUser, router, mounted])
+    if (!isLoading && currentUser && mounted) {
+      const requestedRole = pathname.startsWith('/dashboard/admin') ? 'admin' : 'user'
+      if (currentUser.role !== requestedRole) {
+        router.replace(`/dashboard/${currentUser.role}`)
+      }
+    }
+  }, [isLoading, currentUser, router, mounted, pathname])
 
   if (!mounted || isLoading || !currentUser) {
     return (
@@ -32,11 +40,8 @@ export default function DashboardLayout({
     )
   }
 
-  // No more side-by-side sidebar + independently scrolling main area.
-  // The capsule navbar floats fixed at the top (same as the landing page
-  // navbar) and the whole page scrolls underneath it as one unit.
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-transparent text-slate-950 dark:text-white">
       <CapsuleNavbar role={currentUser.role} />
       <main className="pt-24 sm:pt-28">
         {children}

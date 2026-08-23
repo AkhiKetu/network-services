@@ -1,5 +1,6 @@
 export interface User {
   id: string
+  customerId?: string
   phone: string
   password: string
   email?: string
@@ -9,16 +10,20 @@ export interface User {
   joinDate: string
   totalPaid?: number
   createdBy?: string
+  zone?: string
+  deleted?: boolean
 }
 
 export interface Connection {
   id: string
   userId: string
   name: string
+  packageName?: string
   activationDate: string
   expirationDate: string
   status: 'active' | 'expired' | 'pending'
   monthlyPrice: number
+  deleted?: boolean
 }
 
 export interface Billing {

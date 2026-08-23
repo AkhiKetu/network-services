@@ -67,7 +67,7 @@ const USER_LINKS = [
 
 function HoverLabel({ children }: { children: string }) {
   return (
-    <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1 -translate-x-1/2 translate-y-1 whitespace-nowrap text-xs font-medium text-foreground opacity-0 transition-[opacity,transform] duration-150 ease-out group-hover:translate-y-0 group-hover:opacity-100">
+    <span className="pointer-events-none absolute left-1/2 top-full z-[60] mt-2 -translate-x-1/2 translate-y-1 whitespace-nowrap rounded-full border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground opacity-0 shadow-lg transition-[opacity,transform] duration-150 ease-out group-hover:translate-y-0 group-hover:opacity-100">
       {children}
     </span>
   );
@@ -100,12 +100,12 @@ export function CapsuleNavbar({ role }: CapsuleNavbarProps) {
   };
 
   return (
-    <header className="fixed inset-x-0 top-4 z-50 flex justify-center px-3">
+    <header className="fixed inset-x-0 top-4 z-50 flex justify-center px-2 sm:px-3">
       <nav
-        className={`flex items-center rounded-full border border-border bg-card/90 shadow-lg backdrop-blur-xl transition-all duration-200 ease-out ${
+        className={`flex max-w-[calc(100vw-1.5rem)] items-center rounded-full border border-border bg-card/90 shadow-lg backdrop-blur-xl transition-all duration-200 ease-out ${
           scrolled
-            ? "gap-0.5 px-2 py-2"
-            : "gap-1 px-3 py-2.5"
+            ? "gap-0 px-1 py-1.5 sm:gap-0.5 sm:px-2 sm:py-2"
+            : "gap-0 px-1.5 py-1.5 sm:gap-1 sm:px-3 sm:py-2.5"
         }`}
       >
         {/* Logo */}
@@ -120,7 +120,7 @@ export function CapsuleNavbar({ role }: CapsuleNavbarProps) {
             width={32}
             height={32}
             priority
-            className="h-8 w-8 object-contain"
+            className="h-7 w-7 object-contain sm:h-8 sm:w-8"
           />
         </Link>
 
@@ -133,7 +133,8 @@ export function CapsuleNavbar({ role }: CapsuleNavbarProps) {
               <Link
                 href={link.href}
                 aria-label={link.label}
-                className="flex cursor-pointer items-center gap-1.5 px-2 py-2 text-sm font-medium text-muted-foreground transition-[color,transform] duration-150 ease-out hover:-translate-y-0.5 hover:text-primary"
+                title={scrolled ? link.label : undefined}
+                className="flex cursor-pointer items-center gap-1.5 px-1.5 py-1.5 text-sm font-medium text-muted-foreground transition-[color,transform] duration-150 ease-out hover:-translate-y-0.5 hover:text-primary sm:px-2 sm:py-2"
               >
                 <Icon className="h-4 w-4" />
 
@@ -152,7 +153,7 @@ export function CapsuleNavbar({ role }: CapsuleNavbarProps) {
 
         {/* Theme */}
         <div className="group relative shrink-0">
-          <ThemeToggle className="cursor-pointer border-0 bg-transparent" />
+          <ThemeToggle className="h-8 w-8 cursor-pointer border-0 bg-transparent sm:h-9 sm:w-9" />
 
           {scrolled && <HoverLabel>Theme</HoverLabel>}
         </div>
@@ -163,7 +164,8 @@ export function CapsuleNavbar({ role }: CapsuleNavbarProps) {
             type="button"
             onClick={handleLogout}
             aria-label="Logout"
-            className="flex h-9 w-9 cursor-pointer items-center justify-center text-muted-foreground transition-[color,transform] duration-150 ease-out hover:-translate-y-0.5 hover:text-primary"
+            title="Logout"
+            className="flex h-8 w-8 cursor-pointer items-center justify-center text-muted-foreground transition-[color,transform] duration-150 ease-out hover:-translate-y-0.5 hover:text-primary sm:h-9 sm:w-9"
           >
             <LogOut className="h-4 w-4" />
           </button>

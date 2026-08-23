@@ -6,18 +6,6 @@ export const calculateMonthlyBill = (connections: Connection[]): number => {
     .reduce((total, conn) => total + conn.monthlyPrice, 0)
 }
 
-export const calculateYearlyRevenue = (connections: Connection[]): number => {
-  return connections
-    .filter(conn => conn.status === 'active')
-    .reduce((total, conn) => total + (conn.monthlyPrice * 12), 0)
-}
-
-export const calculateUserTotalPaid = (billings: Billing[], userId: string): number => {
-  return billings
-    .filter(bill => bill.userId === userId && bill.status === 'paid')
-    .reduce((total, bill) => total + bill.amount, 0)
-}
-
 export const calculateMonthlyRevenue = (billings: Billing[]): number => {
   const today = new Date()
   const currentMonth = today.getMonth()

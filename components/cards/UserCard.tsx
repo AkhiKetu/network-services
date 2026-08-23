@@ -1,23 +1,28 @@
 'use client'
 
-import { User } from '@/lib/types'
+import { Connection, User } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { User as UserIcon, Phone, DollarSign } from 'lucide-react'
+import { User as UserIcon, Phone, DollarSign, Trash2 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils/billCalculator'
 
 interface UserCardProps {
   user: User
+  connection?: Connection
   onManage?: (user: User) => void
   onEmail?: (user: User) => void
+  onDelete?: (user: User) => void
 }
 
 export const UserCard: React.FC<UserCardProps> = ({
   user,
+  connection,
   onManage,
-  onEmail
+  onEmail,
+  onDelete
 }) => {
   const getSubscriptionBadge = (status: string) => {
+    if (user.deleted) return <Badge variant="secondary" className="bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300">Deleted</Badge>
     switch (status) {
       case 'active':
         return <Badge className="bg-green-100 dark:bg-green-900 text-green-900 dark:text-green-300">Active</Badge>
@@ -49,15 +54,20 @@ export const UserCard: React.FC<UserCardProps> = ({
       {/* Details */}
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
-          <p className="text-xs text-muted-foreground mb-1">Join Date</p>
-          <p className="font-medium text-foreground">{new Date(user.joinDate).toLocaleDateString()}</p>
+          <p className="text-xs text-muted-foreground mb-1">Customer ID</p>
+          <p className="font-medium text-foreground">{user.customerId || user.id}</p>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground mb-1">Total Paid</p>
-          <p className="font-medium text-foreground flex items-center gap-1">
-            <DollarSign className="w-4 h-4" />
-            {user.totalPaid ? formatCurrency(user.totalPaid) : formatCurrency(0)}
-          </p>
+          <p className="text-xs text-muted-foreground mb-1">Zone / Area</p>
+          <p className="font-medium text-foreground">{user.zone || 'Unassigned'}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground mb-1">Package</p>
+          <p className="font-medium text-foreground">{connection?.packageName || connection?.name || 'No connection'}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground mb-1">Monthly bill</p>
+          <p className="font-medium text-foreground flex items-center gap-1"><DollarSign className="w-4 h-4" />{connection ? formatCurrency(connection.monthlyPrice) : formatCurrency(0)}</p>
         </div>
       </div>
 
@@ -79,6 +89,11 @@ export const UserCard: React.FC<UserCardProps> = ({
             onClick={() => onEmail(user)}
           >
             Contact
+          </Button>
+        )}
+        {onDelete && (
+          <Button size="sm" variant="destructive" onClick={() => onDelete(user)} className="cursor-pointer gap-1">
+            <Trash2 className="h-3.5 w-3.5" /> Delete
           </Button>
         )}
       </div>

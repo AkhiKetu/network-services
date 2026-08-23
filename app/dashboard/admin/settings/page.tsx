@@ -79,7 +79,7 @@ export default function AdminSettings() {
   }
 
   return (
-    <div className="p-8 space-y-8">
+    <main className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-10 pt-4 sm:space-y-6 sm:px-6 sm:pt-6">
       {/* Header */}
       <div>
         <h1 className="text-4xl font-bold text-foreground">Admin Settings</h1>
@@ -87,7 +87,7 @@ export default function AdminSettings() {
       </div>
 
       {/* Admin Profile */}
-      <div className="bg-card border border-border rounded-lg p-6 max-w-2xl space-y-6">
+      <div className="w-full rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-6 space-y-6">
         <h2 className="text-2xl font-bold text-foreground">Admin Profile</h2>
 
         <div className="space-y-4">
@@ -167,7 +167,7 @@ export default function AdminSettings() {
       </div>
 
       {/* Manage Admins */}
-      <div className="bg-card border border-border rounded-lg p-6 max-w-2xl space-y-6">
+      <div className="w-full rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-6 space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Shield className="w-6 h-6" /> Admin Accounts
@@ -222,7 +222,7 @@ export default function AdminSettings() {
       </div>
 
       {/* System Settings */}
-      <div className="bg-card border border-border rounded-lg p-6 max-w-2xl space-y-6">
+      <div className="w-full rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-6 space-y-6">
         <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
           <SettingsIcon className="w-6 h-6" /> System Settings
         </h2>
@@ -255,7 +255,7 @@ export default function AdminSettings() {
       </div>
 
       {/* Integrations */}
-      <div className="bg-card border border-border rounded-lg p-6 max-w-2xl space-y-6">
+      <div className="w-full rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-6 space-y-6">
         <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
           <Database className="w-6 h-6" /> Integrations
         </h2>
@@ -296,7 +296,7 @@ export default function AdminSettings() {
       </div>
 
       {/* Security & Compliance */}
-      <div className="bg-card border border-border rounded-lg p-6 max-w-2xl space-y-6">
+      <div className="w-full rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-6 space-y-6">
         <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
           <Shield className="w-6 h-6" /> Security & Compliance
         </h2>
@@ -329,7 +329,7 @@ export default function AdminSettings() {
       </div>
 
       {/* Danger Zone */}
-      <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-6 max-w-2xl">
+      <div className="w-full rounded-3xl border border-red-200 bg-red-50 p-4 shadow-sm dark:border-red-800 dark:bg-red-950 sm:p-6">
         <h2 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-4">Danger Zone</h2>
         <p className="text-muted-foreground mb-4">These actions are irreversible and affect all users.</p>
         <div className="space-y-2">
@@ -341,6 +341,6 @@ export default function AdminSettings() {
           </Button>
         </div>
       </div>
-    </div>
+    </main>
   )
 }

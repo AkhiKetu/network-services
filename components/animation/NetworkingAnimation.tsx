@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  memo,
-  useCallback,
-  useEffect,
-  useRef,
-} from "react";
+import { memo, useCallback, useEffect, useRef } from "react";
 import Lottie, {
   type LottieRefCurrentProps,
 } from "lottie-react";
@@ -73,26 +68,17 @@ function NetworkingAnimation() {
     syncPlayback();
   }, [syncPlayback]);
 
-  function handleAnimationReady(): void {
-    syncPlayback();
-  }
-
   return (
     <div ref={containerRef} className="h-full w-full">
       <Lottie
-  lottieRef={lottieRef}
-  animationData={networkingAnimation}
-  autoplay={false}
-  loop
-  onDOMLoaded={handleAnimationReady}
-  rendererSettings={{
-    preserveAspectRatio: "xMidYMid meet",
-  }}
-  style={{
-    width: "100%",
-    height: "100%",
-  }}
-/>
+        lottieRef={lottieRef}
+        animationData={networkingAnimation}
+        autoplay={false}
+        loop
+        onDOMLoaded={handleReady}
+        rendererSettings={{ preserveAspectRatio: "xMidYMid meet" }}
+        style={{ width: "100%", height: "100%" }}
+      />
     </div>
   );
 }
