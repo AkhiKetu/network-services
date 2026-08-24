@@ -1,179 +1,115 @@
 'use client'
 
-import { useApp } from '@/lib/context/AppContext'
+import { useEffect, useMemo, useState } from 'react'
+import { DollarSign, TrendingUp, Users, Wifi } from 'lucide-react'
 import { StatCard } from '@/components/cards/StatCard'
-import { DollarSign, TrendingUp, Users, Wifi, BarChart3 } from 'lucide-react'
-import { calculateYearlyIncomeFromBillings, calculateMonthlyRevenue, formatCurrency, getRevenueByMonth } from '@/lib/utils/billCalculator'
+import type { AdminBilling, AdminCollection, AdminConnection, AdminProfile } from '@/lib/types/admin'
+import { getAdminBillingMetrics, isInCurrentMonth } from '@/lib/utils/adminMetrics'
+
+type AnalyticsData = {
+  profiles: AdminProfile[]
+  connections: AdminConnection[]
+  billings: AdminBilling[]
+  collections: AdminCollection[]
+}
+const money = (value: number) => `৳${value.toLocaleString('en-BD')}`
 
 export default function AdminAnalytics() {
-  const { users, connections, billings } = useApp()
+  const [data, setData] = useState<AnalyticsData | null>(null)
+  const [error, setError] = useState('')
 
-  const monthlyRevenue = calculateMonthlyRevenue(billings)
-  const yearlyRevenue = calculateYearlyIncomeFromBillings(billings)
-  const totalBillings = billings.length
-  const paidBillings = billings.filter(b => b.status === 'paid').length
-  const revenueByMonth = getRevenueByMonth(billings)
+  useEffect(() => {
+    void fetch('/api/admin/analytics', { cache: 'no-store' })
+      .then(async response => {
+        const result = await response.json()
+        if (!response.ok) throw new Error(result.error)
+        setData(result)
+      })
+      .catch(cause => setError(cause instanceof Error ? cause.message : 'Unable to load analytics.'))
+  }, [])
 
-  const regularUsers = users.filter(u => u.role === 'user')
-  const activeUsers = regularUsers.filter(u => u.subscriptionStatus === 'active')
-  const expiredUsers = regularUsers.filter(u => u.subscriptionStatus === 'expired')
+  const report = useMemo(() => data && createReport(data), [data])
+  if (error) return <Message error={error} />
+  if (!data || !report) return <Message>Loading analytics…</Message>
 
-  const totalMonthlyValue = connections
-    .filter(c => c.status === 'active')
-    .reduce((sum, c) => sum + c.monthlyPrice, 0)
-
-  const topUsers = [...regularUsers]
-    .sort((a, b) => (b.totalPaid || 0) - (a.totalPaid || 0))
-    .slice(0, 5)
-
-  const averageRevenue = paidBillings > 0 ? (yearlyRevenue / 12).toFixed(2) : '0.00'
+  const stats = getAdminBillingMetrics(data.profiles, data.connections, data.collections)
+  const cards = [
+    ['Monthly Total Bill', money(stats.monthlyTotalBill), DollarSign],
+    ['Yearly Total Bill', money(stats.yearlyTotalBill), TrendingUp],
+    ['Customers', stats.customers, Users],
+    ['Active Connections', stats.activeConnections, Wifi],
+    ['Expired Connections', stats.expiredConnections, Wifi],
+    ['Paid This Month', money(stats.paidThisMonth), DollarSign],
+    ['Unpaid This Month', money(stats.unpaidThisMonth), DollarSign],
+  ] as const
 
   return (
-    <main className="mx-auto w-full max-w-6xl space-y-5 px-4 pb-10 pt-4 sm:space-y-6 sm:px-6 sm:pt-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-4xl font-bold text-foreground">Analytics & Reports</h1>
-        <p className="text-muted-foreground mt-2">View detailed financial and operational metrics</p>
-      </div>
-
-      {/* Main Metrics */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard
-          title="Monthly Revenue"
-          value={formatCurrency(monthlyRevenue)}
-          icon={DollarSign}
-          description="Current month"
-        />
-        <StatCard
-          title="Yearly Revenue"
-          value={formatCurrency(yearlyRevenue)}
-          icon={TrendingUp}
-          description="This year"
-        />
-        <StatCard
-          title="Average Monthly"
-          value={formatCurrency(parseFloat(averageRevenue))}
-          icon={BarChart3}
-          description="12-month average"
-        />
-      </div>
-
-      {/* User Metrics */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total Users"
-          value={regularUsers.length}
-          icon={Users}
-          description="All registered users"
-        />
-        <StatCard
-          title="Active Subscriptions"
-          value={activeUsers.length}
-          icon={Wifi}
-          description="Currently active"
-        />
-        <StatCard
-          title="Expired Subscriptions"
-          value={expiredUsers.length}
-          icon={Users}
-          description="Need renewal"
-        />
-        <StatCard
-          title="Active Connections"
-          value={connections.filter(c => c.status === 'active').length}
-          icon={Wifi}
-          description="Running now"
-        />
-      </div>
-
-      {/* Billing Metrics */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="bg-card border border-border rounded-lg p-6">
-          <h2 className="text-2xl font-bold text-foreground mb-6">Billing Summary</h2>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Total Invoices</span>
-              <span className="font-bold text-2xl">{totalBillings}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Paid Invoices</span>
-              <span className="font-bold text-green-600">{paidBillings}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Pending Invoices</span>
-              <span className="font-bold text-amber-600">{totalBillings - paidBillings}</span>
-            </div>
-            <div className="border-t border-border pt-4 flex justify-between items-center">
-              <span className="font-semibold text-foreground">Collection Rate</span>
-              <span className="font-bold">{totalBillings > 0 ? ((paidBillings / totalBillings) * 100).toFixed(1) : 0}%</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-card border border-border rounded-lg p-6">
-          <h2 className="text-2xl font-bold text-foreground mb-6">Connection Overview</h2>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Total Connections</span>
-              <span className="font-bold text-2xl">{connections.length}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Active Connections</span>
-              <span className="font-bold text-green-600">{connections.filter(c => c.status === 'active').length}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Pending/Expired</span>
-              <span className="font-bold text-red-600">{connections.filter(c => c.status !== 'active').length}</span>
-            </div>
-            <div className="border-t border-border pt-4 flex justify-between items-center">
-              <span className="font-semibold text-foreground">Monthly Value</span>
-              <span className="font-bold">{formatCurrency(totalMonthlyValue)}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Monthly Revenue Breakdown */}
-      <div className="rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-5">
-        <h2 className="text-2xl font-bold text-foreground mb-6">Monthly Revenue Breakdown</h2>
-        {Object.keys(revenueByMonth).length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {Object.entries(revenueByMonth).map(([month, revenue]) => (
-              <div key={month} className="bg-secondary/50 rounded-lg p-4 text-center">
-                <p className="text-sm text-muted-foreground mb-1">{month}</p>
-                <p className="text-2xl font-bold text-primary">{formatCurrency(revenue)}</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-muted-foreground text-center py-8">No revenue data available</p>
-        )}
-      </div>
-
-      {/* Top Users */}
-      <div className="rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-5">
-        <h2 className="text-2xl font-bold text-foreground mb-6">Top 5 Users by Revenue</h2>
-        {topUsers.length > 0 ? (
-          <div className="space-y-3">
-            {topUsers.map((user, index) => (
-              <div key={user.id} className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-bold">
-                    {index + 1}
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">{user.name}</p>
-                    <p className="text-xs text-muted-foreground">{user.phone}</p>
-                  </div>
-                </div>
-                <p className="font-bold text-lg">{formatCurrency(user.totalPaid || 0)}</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-muted-foreground text-center py-8">No user data available</p>
-        )}
-      </div>
+    <main className="mx-auto w-full max-w-6xl space-y-5 px-4 pb-10 pt-4 sm:px-6 sm:pt-6">
+      <section>
+        <h1 className="text-3xl font-bold">Analytics & Reports</h1>
+        <p className="mt-2 text-muted-foreground">Supabase collections, bills, connections and customer metrics.</p>
+      </section>
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {cards.map(([title, value, icon]) => <StatCard key={title} title={title} value={value} icon={icon} />)}
+      </section>
+      <section className="grid gap-4 lg:grid-cols-2">
+        <ReportList title="Monthly Revenue Breakdown" values={report.months} empty="No collection data available" />
+        <ReportList title="Payment Method Breakdown" values={report.methods} empty="No payments this month" />
+      </section>
+      <section className="grid gap-4 lg:grid-cols-2">
+        <ReportList title="Zone Metrics" values={report.zones} />
+        <ReportList title="Top Paying Customers" values={report.top} />
+      </section>
     </main>
   )
+}
+
+function createReport({ profiles, connections, collections }: AnalyticsData) {
+  const customers = profiles.filter(profile => profile.role === 'user' && !profile.deleted_at)
+  const customerIds = new Set(customers.map(customer => customer.id))
+  const monthly = collections.filter(item => customerIds.has(item.user_id))
+  const sumBy = (items: AdminCollection[], key: (item: AdminCollection) => string) =>
+    items.reduce<Record<string, number>>((totals, item) => {
+      const label = key(item)
+      totals[label] = (totals[label] ?? 0) + item.amount
+      return totals
+    }, {})
+  const totalBy = (items: AdminCollection[], key: (item: AdminCollection) => string) =>
+    Object.entries(sumBy(items, key))
+  const paymentByCustomer = sumBy(monthly, item => item.user_id)
+  const expectedByCustomer = connections.reduce<Record<string, number>>((totals, connection) => {
+    if (!connection.deleted_at) totals[connection.user_id] = (totals[connection.user_id] ?? 0) + connection.monthly_price
+    return totals
+  }, {})
+  const zones = customers.reduce<Record<string, { customers: number; expected: number; collected: number }>>((totals, customer) => {
+    const zone = customer.zone ?? 'Unassigned'
+    const value = totals[zone] ?? { customers: 0, expected: 0, collected: 0 }
+    value.customers += 1
+    value.expected += expectedByCustomer[customer.id] ?? 0
+    value.collected += getCurrentMonthTotal(monthly, customer.id)
+    totals[zone] = value
+    return totals
+  }, {})
+
+  return {
+    months: totalBy(monthly, item => new Date(item.created_at).toLocaleDateString('en-BD', { month: 'short', year: 'numeric' })),
+    methods: totalBy(monthly.filter(item => isInCurrentMonth(item.created_at)), item => item.payment_method),
+    zones: Object.entries(zones).map(([zone, value]) => [zone, `${value.customers} customers · ${money(value.expected)} expected · ${money(value.collected)} collected`] as const),
+    top: customers.map(customer => [customer.name ?? 'Unnamed', paymentByCustomer[customer.id] ?? 0] as const).sort(([, left], [, right]) => right - left).slice(0, 5),
+  }
+}
+
+function getCurrentMonthTotal(collections: AdminCollection[], customerId: string) {
+  return collections.filter(item => item.user_id === customerId && isInCurrentMonth(item.created_at)).reduce((total, item) => total + item.amount, 0)
+}
+
+function ReportList({ title, values, empty }: { title: string; values: readonly (readonly [string, string | number])[]; empty?: string }) {
+  return <div className="rounded-3xl border border-border bg-card p-5">
+    <h2 className="mb-4 text-xl font-bold">{title}</h2>
+    {values.length ? values.map(([label, value]) => <p key={label} className="flex justify-between border-b border-border py-2"><span className="capitalize">{label}</span><b>{typeof value === 'number' ? money(value) : value}</b></p>) : <p className="text-muted-foreground">{empty ?? 'No data available'}</p>}
+  </div>
+}
+
+function Message({ children, error }: { children?: React.ReactNode; error?: string }) {
+  return <main className="mx-auto max-w-6xl p-6"><p role={error ? 'alert' : undefined} className={error ? 'rounded-xl bg-red-500/10 p-4 text-red-600' : 'text-muted-foreground'}>{error ?? children}</p></main>
 }

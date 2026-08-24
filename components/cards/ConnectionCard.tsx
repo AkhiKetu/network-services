@@ -12,17 +12,19 @@ interface ConnectionCardProps {
   onRenew?: (connection: Connection) => void
   showUser?: boolean
   userName?: string
+  expiringSoonDays?: number
 }
 
 export const ConnectionCard: React.FC<ConnectionCardProps> = ({
   connection,
   onRenew,
   showUser = false,
-  userName
+  userName,
+  expiringSoonDays = 30
 }) => {
   const daysRemaining = getDaysRemaining(connection.expirationDate)
   const isExpiredStatus = isExpired(connection.expirationDate)
-  const isExpiringSoonStatus = isExpiringSoon(connection.expirationDate)
+  const isExpiringSoonStatus = isExpiringSoon(connection.expirationDate, expiringSoonDays)
 
   const getStatusBadge = () => {
     if (connection.deleted) {

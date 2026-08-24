@@ -1,301 +1,108 @@
-"use client";
+'use client'
 
-import Link from "next/link";
-import {
-  ArrowRight,
-  Bell,
-  DollarSign,
-  TrendingUp,
-  Users,
-  Wifi,
-} from "lucide-react";
+import Link from 'next/link'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { ArrowRight, Bell, DollarSign, TrendingUp, Users, Wifi } from 'lucide-react'
+import { ConnectionCard } from '@/components/cards/ConnectionCard'
+import type { AdminCollection, AdminConnection, AdminNotification, AdminProfile } from '@/lib/types/admin'
+import { getAdminBillingMetrics } from '@/lib/utils/adminMetrics'
+import { getConnectionStatus } from '@/lib/utils/connectionStatus'
 
-import { ConnectionCard } from "@/components/cards/ConnectionCard";
-import { Button } from "@/components/ui/button";
-import { useApp } from "@/lib/context/AppContext";
-import { useAuth } from "@/lib/context/AuthContext";
-import {
-  calculateMonthlyRevenue,
-  calculateYearlyIncomeFromBillings,
-  formatCurrency,
-} from "@/lib/utils/billCalculator";
+type DashboardData = {
+  profiles: AdminProfile[]
+  connections: AdminConnection[]
+  collections: AdminCollection[]
+  notifications: AdminNotification[]
+}
 
-const PAGE_WIDTH = "mx-auto w-full max-w-6xl px-4 sm:px-6";
-
-const CARD =
-  "border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.03]";
-
-const MUTED = "text-slate-500 dark:text-white/55";
-
-const QUICK_LINK =
-  "flex cursor-pointer items-center justify-center gap-1 rounded-full border border-slate-200 px-4 py-2 text-sm text-slate-700 transition-[color,transform] duration-200 hover:-translate-y-0.5 hover:text-primary dark:border-white/10 dark:text-white/70 dark:hover:text-primary";
+const money = (value: number) => `৳${value.toLocaleString('en-BD')}`
+const links = [
+  ['Bill Collection', '/dashboard/admin/collections'],
+  ['Users', '/dashboard/admin/users'],
+  ['Connections', '/dashboard/admin/connections'],
+  ['Analytics', '/dashboard/admin/analytics'],
+] as const
 
 export default function AdminDashboard() {
-  const { currentUser } = useAuth();
+  const [data, setData] = useState<DashboardData | null>(null)
+  const [error, setError] = useState('')
 
-  const {
-    users,
-    connections,
-    billings,
-    markNotificationAsRead,
-    getUnreadNotifications,
-  } = useApp();
+  const loadDashboard = useCallback(() => {
+    return fetch('/api/admin/dashboard', { cache: 'no-store' })
+      .then(async response => {
+        const result = await response.json()
+        if (!response.ok) throw new Error(result.error)
+        setData(result)
+        setError('')
+      })
+      .catch(cause => setError(cause instanceof Error ? cause.message : 'Unable to load dashboard.'))
+  }, [])
 
-  if (!currentUser) return null;
+  useEffect(() => {
+    void loadDashboard()
+    window.addEventListener('focus', loadDashboard)
+    return () => window.removeEventListener('focus', loadDashboard)
+  }, [loadDashboard])
 
-  const monthlyRevenue = calculateMonthlyRevenue(billings);
+  const metrics = useMemo(
+    () => data && getAdminBillingMetrics(data.profiles, data.connections, data.collections),
+    [data]
+  )
 
-  const yearlyRevenue =
-    calculateYearlyIncomeFromBillings(billings);
+  if (error) return <PageMessage error={error} />
+  if (!data || !metrics) return <PageMessage>Loading dashboard…</PageMessage>
 
-  const totalUsers = users.filter(
-    (user) => user.role === "user"
-  ).length;
-
-  const activeUsers = users.filter(
-    (user) =>
-      user.role === "user" &&
-      user.subscriptionStatus === "active"
-  ).length;
-
-  const activeConnections = connections.filter(
-    (connection) => connection.status === "active"
-  ).length;
-
-  const unreadNotifications = getUnreadNotifications();
-
-  const stats = [
-    {
-      label: "Monthly Revenue",
-      value: formatCurrency(monthlyRevenue),
-      note: "Current month",
-      icon: DollarSign,
-    },
-    {
-      label: "Yearly Revenue",
-      value: formatCurrency(yearlyRevenue),
-      note: "This year",
-      icon: TrendingUp,
-    },
-    {
-      label: "Active Users",
-      value: activeUsers,
-      note: `${totalUsers} total users`,
-      icon: Users,
-    },
-    {
-      label: "Active Connections",
-      value: activeConnections,
-      note: `${connections.length} total connections`,
-      icon: Wifi,
-    },
-  ];
+  const cards = [
+    ['Monthly Total Bill', money(metrics.monthlyTotalBill), DollarSign],
+    ['Yearly Total Bill', money(metrics.yearlyTotalBill), TrendingUp],
+    ['Customers', metrics.customers, Users],
+    ['Active Connections', metrics.activeConnections, Wifi],
+  ] as const
+  const unread = data.notifications.filter(notification => !notification.is_read).slice(0, 3)
 
   return (
     <main className="min-h-screen pb-10 pt-4 sm:pb-12 sm:pt-6">
-      <div className={`${PAGE_WIDTH} space-y-5 sm:space-y-6`}>
-        {/* WELCOME */}
-        <section className={`rounded-3xl p-5 sm:p-7 ${CARD}`}>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className={`text-sm ${MUTED}`}>
-                Welcome back
-              </p>
-
-              <h1 className="mt-1 text-2xl font-bold text-slate-950 dark:text-white sm:text-3xl">
-                Welcome, {currentUser.name.split(" ")[0]}
-              </h1>
-
-              <p className={`mt-1 text-sm ${MUTED}`}>
-                {currentUser.phone}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <span className="rounded-full border border-slate-200 px-3 py-1.5 text-sm text-slate-600 dark:border-white/10 dark:text-white/60">
-                {totalUsers} users
-              </span>
-
-              <span className="rounded-full border border-slate-200 px-3 py-1.5 text-sm text-slate-600 dark:border-white/10 dark:text-white/60">
-                {activeConnections} active
-              </span>
-            </div>
-          </div>
+      <div className="mx-auto w-full max-w-6xl space-y-5 px-4 sm:space-y-6 sm:px-6">
+        <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
+          <p className="text-sm text-muted-foreground">Supabase business overview</p>
+          <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Admin Dashboard</h1>
         </section>
 
-        {/* STATS */}
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {stats.map((stat) => {
-            const Icon = stat.icon;
-
-            return (
-              <article
-                key={stat.label}
-                className={`rounded-2xl p-4 sm:p-5 ${CARD}`}
-              >
-                <div className="mb-4 flex items-start justify-between gap-2">
-                  <p className={`text-xs sm:text-sm ${MUTED}`}>
-                    {stat.label}
-                  </p>
-
-                  <Icon className="h-5 w-5 text-slate-500 dark:text-white/55" />
-                </div>
-
-                <h3 className="text-xl font-bold text-slate-950 dark:text-white sm:text-2xl">
-                  {stat.value}
-                </h3>
-
-                <p className={`mt-1 text-xs ${MUTED}`}>
-                  {stat.note}
-                </p>
-              </article>
-            );
-          })}
+          {cards.map(([label, value, Icon]) => (
+            <article key={label} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+              <div className="flex justify-between"><p className="text-sm text-muted-foreground">{label}</p><Icon className="h-5 w-5 text-primary" /></div>
+              <p className="mt-4 text-2xl font-bold">{value}</p>
+            </article>
+          ))}
         </section>
 
-        {/* NOTIFICATIONS */}
-        {unreadNotifications.length > 0 && (
-          <section className={`rounded-3xl p-5 ${CARD}`}>
-            <div className="mb-4 flex items-center gap-2">
-              <Bell className="h-5 w-5 text-slate-500 dark:text-white/55" />
+        {unread.length > 0 && <section className="rounded-3xl border border-border bg-card p-5">
+          <h2 className="mb-4 flex gap-2 font-bold"><Bell className="h-5 w-5" />Recent Notifications</h2>
+          {unread.map(item => <div key={item.id} className="mb-2 rounded-2xl bg-muted/50 p-3"><p className="font-medium">{item.title}</p><p className="text-sm text-muted-foreground">{item.message}</p></div>)}
+        </section>}
 
-              <h2 className="font-bold text-slate-950 dark:text-white">
-                Recent Notifications
-              </h2>
-            </div>
-
-            <div className="space-y-2">
-              {unreadNotifications
-                .slice(0, 3)
-                .map((notification) => (
-                  <div
-                    key={notification.id}
-                    className="flex flex-col gap-3 rounded-2xl bg-slate-50 p-4 dark:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div>
-                      <p className="font-medium text-slate-950 dark:text-white">
-                        {notification.title}
-                      </p>
-
-                      <p className={`text-sm ${MUTED}`}>
-                        {notification.message}
-                      </p>
-                    </div>
-
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      onClick={() =>
-                        markNotificationAsRead(notification.id)
-                      }
-                      className="cursor-pointer rounded-full dark:hover:bg-white/[0.06]"
-                    >
-                      Mark read
-                    </Button>
-                  </div>
-                ))}
-            </div>
-          </section>
-        )}
-
-        {/* QUICK LINKS */}
-        <section className={`rounded-3xl p-5 ${CARD}`}>
-          <h2 className="mb-4 text-lg font-bold text-slate-950 dark:text-white">
-            Quick Links
-          </h2>
-
+        <section className="rounded-3xl border border-border bg-card p-5">
+          <h2 className="mb-4 font-bold">Quick Links</h2>
           <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-            <Link
-              href="/dashboard/admin/collections"
-              className={QUICK_LINK}
-            >
-              Bill Collection
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-
-            <Link
-              href="/dashboard/admin/users"
-              className={QUICK_LINK}
-            >
-              Users
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-
-            <Link
-              href="/dashboard/admin/connections"
-              className={QUICK_LINK}
-            >
-              Connections
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-
-            <Link
-              href="/dashboard/admin/analytics"
-              className={QUICK_LINK}
-            >
-              Analytics
-              <ArrowRight className="h-4 w-4" />
-            </Link>
+            {links.map(([label, href]) => <Link key={href} href={href} className="flex items-center justify-center gap-1 rounded-full border border-border px-4 py-2 text-sm hover:text-primary">{label}<ArrowRight className="h-4 w-4" /></Link>)}
           </div>
         </section>
 
-        {/* RECENT CONNECTIONS */}
         <section>
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="text-lg font-bold text-slate-950 dark:text-white sm:text-xl">
-              Recent Connections
-            </h2>
-
-            <Link
-              href="/dashboard/admin/connections"
-              className="cursor-pointer text-sm text-slate-500 transition-colors hover:text-primary dark:text-white/55 dark:hover:text-primary"
-            >
-              View All
-            </Link>
-          </div>
-
-          {connections.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              {connections
-                .slice(0, 4)
-                .map((connection) => {
-                  const user = users.find(
-                    (item) =>
-                      item.id === connection.userId
-                  );
-
-                  return (
-                    <div
-                      key={connection.id}
-                      className="rounded-3xl dark:[&>*]:border-white/10 dark:[&>*]:bg-white/[0.03]"
-                    >
-                      <ConnectionCard
-                        connection={connection}
-                        showUser
-                        userName={user?.name}
-                      />
-                    </div>
-                  );
-                })}
-            </div>
-          ) : (
-            <div
-              className={`rounded-3xl p-10 text-center ${CARD}`}
-            >
-              <Wifi className="mx-auto mb-3 h-10 w-10 text-slate-400 dark:text-white/30" />
-
-              <h3 className="font-semibold text-slate-950 dark:text-white">
-                No Connections
-              </h3>
-
-              <p className={`mt-1 text-sm ${MUTED}`}>
-                No connections created yet.
-              </p>
-            </div>
-          )}
+          <h2 className="mb-4 text-lg font-bold">Recent Connections</h2>
+          {data.connections.length ? <div className="grid gap-4 md:grid-cols-2">
+            {data.connections.slice(0, 4).map(connection => {
+              const user = data.profiles.find(profile => profile.id === connection.user_id)
+              return <ConnectionCard key={connection.id} showUser userName={user?.name ?? undefined} expiringSoonDays={5} connection={{ id: connection.id, userId: connection.user_id, name: connection.package_name, packageName: connection.package_name, activationDate: connection.start_date, expirationDate: connection.renewal_date, status: getConnectionStatus(connection) === 'active' ? 'active' : 'expired', monthlyPrice: connection.monthly_price, deleted: Boolean(connection.deleted_at) }} />
+            })}
+          </div> : <div className="rounded-3xl border border-border bg-card p-10 text-center"><Wifi className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />No Connections</div>}
         </section>
       </div>
     </main>
-  );
+  )
+}
+
+function PageMessage({ children, error }: { children?: React.ReactNode; error?: string }) {
+  return <main className="mx-auto max-w-6xl p-6"><p role={error ? 'alert' : undefined} className={error ? 'rounded-xl bg-red-500/10 p-4 text-red-600' : 'text-muted-foreground'}>{error ?? children}</p></main>
 }

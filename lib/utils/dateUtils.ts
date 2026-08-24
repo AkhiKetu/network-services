@@ -37,3 +37,9 @@ export const addCalendarMonth = (date = new Date()): Date => {
 
 export const getRenewalDate = (date = new Date()): string =>
   addCalendarMonth(date).toISOString().slice(0, 10)
+
+/** Converts a database date (YYYY-MM-DD) without applying a UTC offset. */
+export const dateFromInput = (value: string): Date => {
+  const [year, month, day] = value.slice(0, 10).split('-').map(Number)
+  return new Date(year, month - 1, day)
+}

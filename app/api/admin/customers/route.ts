@@ -204,6 +204,7 @@ export async function GET() {
   const [
     { data: profiles, error: profilesError },
     { data: connections, error: connectionsError },
+    { data: billings, error: billingsError },
   ] = await Promise.all([
     admin
       .from('profiles')
@@ -218,6 +219,11 @@ export async function GET() {
       .select(
         'id, user_id, package_name, monthly_price, status, start_date, renewal_date, created_at, deleted_at'
       ),
+
+    admin
+      .from('billings')
+      .select('id, user_id, connection_id, amount, billing_month, due_date, status, paid_at, created_at')
+      .order('created_at', { ascending: false }),
   ])
 
   if (profilesError) {
@@ -232,9 +238,15 @@ export async function GET() {
     return apiError('Unable to load customer connections.', 500)
   }
 
+  if (billingsError) {
+    console.error('Billings fetch failed:', billingsError)
+    return apiError('Unable to load customer billings.', 500)
+  }
+
   return NextResponse.json({
     profiles: profiles ?? [],
     connections: connections ?? [],
+    billings: billings ?? [],
   })
 }
 
@@ -411,6 +423,32 @@ export async function POST(request: Request) {
     )
   }
 
+  const billingMonth = `${today.slice(0, 7)}-01`
+  const { error: billingInsertError } = await admin
+    .from('billings')
+    .insert({
+      user_id: userId,
+      connection_id: connection.id,
+      amount: customer.monthlyPrice,
+      billing_month: billingMonth,
+      due_date: connection.renewal_date,
+      status: 'unpaid',
+      paid_at: null,
+    })
+
+  if (billingInsertError) {
+    console.error('Initial billing creation failed:', billingInsertError)
+
+    await admin.from('connections').delete().eq('id', connection.id)
+    await admin.from('profiles').delete().eq('id', userId)
+    await admin.auth.admin.deleteUser(userId)
+
+    return apiError(
+      'Unable to create the first customer invoice. The customer was rolled back.',
+      500
+    )
+  }
+
   return NextResponse.json(
     {
       profile,
@@ -418,4 +456,52 @@ export async function POST(request: Request) {
     },
     { status: 201 }
   )
+}
+
+export async function PATCH(request: Request) {
+  const authorization = await requirePrivilegedUser()
+  if ('error' in authorization) return authorization.error
+
+  let payload: { id?: string; connectionId?: string; customerId?: string; name?: string; phone?: string; zone?: string; packageName?: string; monthlyPrice?: number }
+  try {
+    payload = await request.json()
+  } catch {
+    return apiError('Invalid request body.', 400)
+  }
+
+  if (!payload.id || !payload.connectionId || !payload.customerId?.trim() || !payload.name?.trim() || !payload.phone?.trim() || !payload.zone?.trim() || !payload.packageName?.trim() || !Number.isFinite(payload.monthlyPrice) || payload.monthlyPrice! < 0) {
+    return apiError('Complete every customer field and provide a valid monthly bill.', 400)
+  }
+
+  const admin = createAdminClient()
+  const [{ data: profile, error: profileError }, { data: connection, error: connectionError }] = await Promise.all([
+    admin.from('profiles').update({ customer_id: payload.customerId.trim(), name: payload.name.trim(), phone: payload.phone.trim(), zone: payload.zone.trim() }).eq('id', payload.id).eq('role', 'user').is('deleted_at', null).select('id, customer_id, name, phone, zone, role, created_at, deleted_at').single(),
+    admin.from('connections').update({ package_name: payload.packageName.trim(), monthly_price: payload.monthlyPrice }).eq('id', payload.connectionId).eq('user_id', payload.id).is('deleted_at', null).select('id, user_id, package_name, monthly_price, status, start_date, renewal_date, created_at, deleted_at').single(),
+  ])
+
+  if (profileError || connectionError || !profile || !connection) {
+    console.error('Customer update failed:', profileError ?? connectionError)
+    return apiError('Unable to update this customer.', 500)
+  }
+  return NextResponse.json({ profile, connection })
+}
+
+export async function DELETE(request: Request) {
+  const authorization = await requirePrivilegedUser()
+  if ('error' in authorization) return authorization.error
+
+  const id = new URL(request.url).searchParams.get('id')
+  if (!id) return apiError('Customer is required.', 400)
+
+  const admin = createAdminClient()
+  const deletedAt = new Date().toISOString()
+  const [{ error: profileError }, { error: connectionError }] = await Promise.all([
+    admin.from('profiles').update({ deleted_at: deletedAt }).eq('id', id).eq('role', 'user'),
+    admin.from('connections').update({ deleted_at: deletedAt }).eq('user_id', id),
+  ])
+  if (profileError || connectionError) {
+    console.error('Customer soft delete failed:', profileError ?? connectionError)
+    return apiError('Unable to deactivate this customer.', 500)
+  }
+  return NextResponse.json({ success: true })
 }
