@@ -5,7 +5,7 @@ import { getConnectionStatus } from '@/lib/utils/connectionStatus'
 import type { AdminBilling, AdminCollection, AdminConnection, AdminCustomer, AdminNotification, AdminProfile, RecentCollection } from '@/lib/types/admin'
 
 const PROFILE_FIELDS = 'id, customer_id, name, phone, zone, role, created_at, deleted_at'
-const CONNECTION_FIELDS = 'id, user_id, package_name, monthly_price, status, start_date, renewal_date, created_at, deleted_at'
+const CONNECTION_FIELDS = 'id, user_id, package_name, monthly_price, connection_type, status, start_date, renewal_date, created_at, deleted_at'
 const BILLING_FIELDS = 'id, user_id, connection_id, amount, billing_month, due_date, status, paid_at, created_at'
 const COLLECTION_FIELDS = 'id, user_id, billing_id, amount, payment_method, reference_note, collected_by, created_at'
 

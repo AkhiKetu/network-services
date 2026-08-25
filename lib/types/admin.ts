@@ -20,6 +20,7 @@ export interface AdminConnection {
   user_id: string
   package_name: string
   monthly_price: number
+  connection_type: string | null
   status: 'active' | 'expired' | 'pending'
   start_date: string
   renewal_date: string

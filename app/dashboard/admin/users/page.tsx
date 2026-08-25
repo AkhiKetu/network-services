@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { Connection, User } from '@/lib/types'
 import type { AdminCustomer } from '@/lib/types/admin'
+import { CONNECTION_TYPES, CUSTOMER_PACKAGES, CUSTOMER_ZONES } from '@/lib/utils/customerOptions'
 
 type FormValues = {
   customerId: string
@@ -16,6 +17,7 @@ type FormValues = {
   zone: string
   packageName: string
   monthlyPrice: string
+  connectionType: string
   email: string
   password: string
 }
@@ -27,6 +29,7 @@ const blank = (): FormValues => ({
   zone: '',
   packageName: '',
   monthlyPrice: '',
+  connectionType: '',
   email: '',
   password: '',
 })
@@ -54,6 +57,7 @@ const toConnection = (
         name: customer.connection.package_name,
         packageName: customer.connection.package_name,
         monthlyPrice: customer.connection.monthly_price,
+        connectionType: customer.connection.connection_type,
         status:
           customer.connection_status === 'active'
             ? 'active'
@@ -86,6 +90,20 @@ export default function AdminUsers() {
     setForm(current => ({
       ...current,
       [field]: value,
+    }))
+  }
+
+  const selectPackage = (packageName: string) => {
+    const customerPackage = CUSTOMER_PACKAGES.find(
+      item => item.name === packageName
+    )
+
+    setForm(current => ({
+      ...current,
+      packageName,
+      monthlyPrice: customerPackage
+        ? String(customerPackage.monthlyPrice)
+        : '',
     }))
   }
 
@@ -236,6 +254,7 @@ export default function AdminUsers() {
       monthlyPrice: String(
         customer.connection?.monthly_price ?? ''
       ),
+      connectionType: customer.connection?.connection_type ?? '',
       email: '',
       password: '',
     })
@@ -254,6 +273,7 @@ export default function AdminUsers() {
       !form.zone.trim() ||
       !form.phone.trim() ||
       !form.packageName.trim() ||
+      !form.connectionType ||
       !form.email.trim() ||
       !form.password
     ) {
@@ -291,6 +311,7 @@ export default function AdminUsers() {
             phone: form.phone.trim(),
             packageName: form.packageName.trim(),
             monthlyPrice,
+            connectionType: form.connectionType,
             email: form.email.trim(),
             password: form.password,
           }),
@@ -352,6 +373,7 @@ export default function AdminUsers() {
             zone: form.zone.trim(),
             packageName: form.packageName.trim(),
             monthlyPrice,
+            connectionType: form.connectionType,
           }),
         }
       )
@@ -648,15 +670,21 @@ export default function AdminUsers() {
 
               <label className="text-sm font-medium text-foreground">
                 Zone / area
-                <Input
+                <select
                   value={form.zone}
                   onChange={event =>
                     setField('zone', event.target.value)
                   }
-                  placeholder="Area or zone"
-                  className="mt-2 h-11"
+                  className="mt-2 h-11 w-full rounded-md border border-input bg-background px-3"
                   required
-                />
+                >
+                  <option value="">Select zone</option>
+                  {CUSTOMER_ZONES.map(zone => (
+                    <option key={zone} value={zone}>
+                      {zone}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <label className="text-sm font-medium text-foreground">
@@ -673,19 +701,25 @@ export default function AdminUsers() {
               </label>
 
               <label className="text-sm font-medium text-foreground">
-                Package name
-                <Input
+                Package
+                <select
                   value={form.packageName}
                   onChange={event =>
-                    setField(
-                      'packageName',
-                      event.target.value
-                    )
+                    selectPackage(event.target.value)
                   }
-                  placeholder="e.g. Gold 50 Mbps"
-                  className="mt-2 h-11"
+                  className="mt-2 h-11 w-full rounded-md border border-input bg-background px-3"
                   required
-                />
+                >
+                  <option value="">Select package</option>
+                  {CUSTOMER_PACKAGES.map(customerPackage => (
+                    <option
+                      key={customerPackage.name}
+                      value={customerPackage.name}
+                    >
+                      {customerPackage.name} — ৳{customerPackage.monthlyPrice}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <label className="text-sm font-medium text-foreground">
@@ -695,16 +729,30 @@ export default function AdminUsers() {
                   min="0"
                   step="0.01"
                   value={form.monthlyPrice}
-                  onChange={event =>
-                    setField(
-                      'monthlyPrice',
-                      event.target.value
-                    )
-                  }
+                  readOnly
                   placeholder="0"
                   className="mt-2 h-11"
                   required
                 />
+              </label>
+
+              <label className="text-sm font-medium text-foreground">
+                Connection Type
+                <select
+                  value={form.connectionType}
+                  onChange={event =>
+                    setField('connectionType', event.target.value)
+                  }
+                  className="mt-2 h-11 w-full rounded-md border border-input bg-background px-3"
+                  required
+                >
+                  <option value="">Select connection type</option>
+                  {CONNECTION_TYPES.map(connectionType => (
+                    <option key={connectionType} value={connectionType}>
+                      {connectionType}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               <label className="text-sm font-medium text-foreground">
@@ -851,6 +899,25 @@ export default function AdminUsers() {
                   </label>
                 )
               )}
+
+              <label className="text-sm font-medium text-foreground">
+                Connection Type
+                <select
+                  value={form.connectionType}
+                  onChange={event =>
+                    setField('connectionType', event.target.value)
+                  }
+                  className="mt-2 h-11 w-full rounded-md border border-input bg-background px-3"
+                  required
+                >
+                  <option value="">Select connection type</option>
+                  {CONNECTION_TYPES.map(connectionType => (
+                    <option key={connectionType} value={connectionType}>
+                      {connectionType}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
 
             {formError && (

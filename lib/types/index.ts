@@ -22,6 +22,7 @@ export interface Connection {
   userId: string
   name: string
   packageName?: string
+  connectionType?: string | null
   activationDate: string
   expirationDate: string
   status: 'active' | 'expired' | 'pending'

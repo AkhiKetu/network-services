@@ -64,7 +64,7 @@ export default function AdminDashboard() {
     <main className="min-h-screen pb-10 pt-4 sm:pb-12 sm:pt-6">
       <div className="mx-auto w-full max-w-6xl space-y-5 px-4 sm:space-y-6 sm:px-6">
         <section className="rounded-3xl border border-border bg-card p-5 shadow-sm">
-          <p className="text-sm text-muted-foreground">Supabase business overview</p>
+          <p className="text-sm text-muted-foreground">Business Overview</p>
           <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Admin Dashboard</h1>
         </section>
 

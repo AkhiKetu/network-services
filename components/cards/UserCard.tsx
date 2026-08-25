@@ -1,9 +1,16 @@
 'use client'
 
-import { Connection, User } from '@/lib/types'
+import {
+  DollarSign,
+  Phone,
+  Trash2,
+  User as UserIcon,
+} from 'lucide-react'
+
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { User as UserIcon, Phone, DollarSign, Trash2 } from 'lucide-react'
+
+import type { Connection, User } from '@/lib/types'
 import { formatCurrency } from '@/lib/utils/billCalculator'
 
 interface UserCardProps {
@@ -19,60 +26,150 @@ export const UserCard: React.FC<UserCardProps> = ({
   connection,
   onManage,
   onEmail,
-  onDelete
+  onDelete,
 }) => {
   const getSubscriptionBadge = (status: string) => {
-    if (user.deleted) return <Badge variant="secondary" className="bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300">Deleted</Badge>
+    if (user.deleted) {
+      return (
+        <Badge
+          variant="secondary"
+          className="
+            border border-red-200
+            bg-red-100
+            text-red-700
+            hover:bg-red-200
+            hover:text-red-800
+            dark:border-red-900/60
+            dark:bg-red-950/50
+            dark:text-red-400
+            dark:hover:bg-red-900/60
+            dark:hover:text-red-300
+          "
+        >
+          Deleted
+        </Badge>
+      )
+    }
+
     switch (status) {
       case 'active':
-        return <Badge className="bg-green-100 dark:bg-green-900 text-green-900 dark:text-green-300">Active</Badge>
+        return (
+          <Badge
+            className="
+              border border-green-200
+              bg-green-100
+              text-green-800
+              hover:bg-green-200
+              dark:border-green-900/60
+              dark:bg-green-950/50
+              dark:text-green-400
+              dark:hover:bg-green-900/60
+            "
+          >
+            Active
+          </Badge>
+        )
+
       case 'expired':
-        return <Badge variant="destructive">Expired</Badge>
+        return (
+          <Badge variant="destructive">
+            Expired
+          </Badge>
+        )
+
       default:
-        return <Badge variant="secondary">Inactive</Badge>
+        return (
+          <Badge variant="secondary">
+            Inactive
+          </Badge>
+        )
     }
   }
 
   return (
-    <div className="bg-card border border-border rounded-lg p-6">
+    <div className="rounded-lg border border-border bg-card p-6">
       {/* Header */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3 flex-1">
-          <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-            <UserIcon className="w-5 h-5 text-primary" />
+      <div className="mb-4 flex items-start justify-between">
+        <div className="flex flex-1 items-center gap-3">
+          <div className="rounded-lg bg-blue-100 p-2 dark:bg-blue-900">
+            <UserIcon className="h-5 w-5 text-primary" />
           </div>
+
           <div className="flex-1">
-            <h3 className="font-semibold text-foreground">{user.name}</h3>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <Phone className="w-3 h-3" /> {user.phone}
+            <h3 className="font-semibold text-foreground">
+              {user.name}
+            </h3>
+
+            <p className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Phone className="h-3 w-3" />
+              {user.phone}
             </p>
           </div>
         </div>
+
         {getSubscriptionBadge(user.subscriptionStatus)}
       </div>
 
       {/* Details */}
-      <div className="grid grid-cols-2 gap-4 mb-4">
+      <div className="mb-4 grid grid-cols-2 gap-4">
         <div>
-          <p className="text-xs text-muted-foreground mb-1">Customer ID</p>
-          <p className="font-medium text-foreground">{user.customerId || user.id}</p>
+          <p className="mb-1 text-xs text-muted-foreground">
+            Customer ID
+          </p>
+
+          <p className="font-medium text-foreground">
+            {user.customerId || user.id}
+          </p>
         </div>
+
         <div>
-          <p className="text-xs text-muted-foreground mb-1">Zone / Area</p>
-          <p className="font-medium text-foreground">{user.zone || 'Unassigned'}</p>
+          <p className="mb-1 text-xs text-muted-foreground">
+            Zone / Area
+          </p>
+
+          <p className="font-medium text-foreground">
+            {user.zone || 'Unassigned'}
+          </p>
         </div>
+
         <div>
-          <p className="text-xs text-muted-foreground mb-1">Package</p>
-          <p className="font-medium text-foreground">{connection?.packageName || connection?.name || 'No connection'}</p>
+          <p className="mb-1 text-xs text-muted-foreground">
+            Package
+          </p>
+
+          <p className="font-medium text-foreground">
+            {connection?.packageName ||
+              connection?.name ||
+              'No connection'}
+          </p>
         </div>
+
         <div>
-          <p className="text-xs text-muted-foreground mb-1">Monthly bill</p>
-          <p className="font-medium text-foreground flex items-center gap-1"><DollarSign className="w-4 h-4" />{connection ? formatCurrency(connection.monthlyPrice) : formatCurrency(0)}</p>
+          <p className="mb-1 text-xs text-muted-foreground">
+            Monthly bill
+          </p>
+
+          <p className="flex items-center gap-1 font-medium text-foreground">
+            <DollarSign className="h-4 w-4" />
+            {connection
+              ? formatCurrency(connection.monthlyPrice)
+              : formatCurrency(0)}
+          </p>
+        </div>
+
+        <div>
+          <p className="mb-1 text-xs text-muted-foreground">
+            Connection type
+          </p>
+
+          <p className="font-medium text-foreground">
+            {connection?.connectionType || 'Not set'}
+          </p>
         </div>
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2 pt-2 border-t border-border">
+      <div className="flex gap-2 border-t border-border pt-2">
         {onManage && (
           <Button
             size="sm"
@@ -82,6 +179,7 @@ export const UserCard: React.FC<UserCardProps> = ({
             Manage
           </Button>
         )}
+
         {onEmail && (
           <Button
             size="sm"
@@ -91,9 +189,16 @@ export const UserCard: React.FC<UserCardProps> = ({
             Contact
           </Button>
         )}
+
         {onDelete && (
-          <Button size="sm" variant="destructive" onClick={() => onDelete(user)} className="cursor-pointer gap-1">
-            <Trash2 className="h-3.5 w-3.5" /> Delete
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => onDelete(user)}
+            className="cursor-pointer gap-1"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Delete
           </Button>
         )}
       </div>

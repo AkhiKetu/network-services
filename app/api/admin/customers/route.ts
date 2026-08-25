@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { getCustomerPackage, isConnectionType, isCustomerZone } from '@/lib/utils/customerOptions'
 import { getRenewalDate } from '@/lib/utils/dateUtils'
 
 export const runtime = 'nodejs'
@@ -14,6 +15,7 @@ type CustomerPayload = {
   zone?: unknown
   packageName?: unknown
   monthlyPrice?: unknown
+  connectionType?: unknown
   password?: unknown
 }
 
@@ -25,6 +27,7 @@ type NormalizedCustomer = {
   zone: string
   packageName: string
   monthlyPrice: number
+  connectionType: string
   password: string
 }
 
@@ -61,13 +64,13 @@ function normalizeCustomer(payload: CustomerPayload): CustomerResult {
       ? payload.packageName.trim()
       : ''
 
+  const connectionType =
+    typeof payload.connectionType === 'string'
+      ? payload.connectionType.trim()
+      : ''
+
   const password =
     typeof payload.password === 'string' ? payload.password : ''
-
-  const monthlyPrice =
-    typeof payload.monthlyPrice === 'number'
-      ? payload.monthlyPrice
-      : Number(payload.monthlyPrice)
 
   if (
     !customerId ||
@@ -75,7 +78,8 @@ function normalizeCustomer(payload: CustomerPayload): CustomerResult {
     !email ||
     !phone ||
     !zone ||
-    !packageName
+    !packageName ||
+    !connectionType
   ) {
     return {
       success: false,
@@ -97,10 +101,26 @@ function normalizeCustomer(payload: CustomerPayload): CustomerResult {
     }
   }
 
-  if (!Number.isFinite(monthlyPrice) || monthlyPrice < 0) {
+  if (!isCustomerZone(zone)) {
     return {
       success: false,
-      error: 'Enter a valid monthly bill amount.',
+      error: 'Select a valid customer zone.',
+    }
+  }
+
+  const customerPackage = getCustomerPackage(packageName)
+
+  if (!customerPackage) {
+    return {
+      success: false,
+      error: 'Select a valid customer package.',
+    }
+  }
+
+  if (!isConnectionType(connectionType)) {
+    return {
+      success: false,
+      error: 'Select a valid connection type.',
     }
   }
 
@@ -113,7 +133,8 @@ function normalizeCustomer(payload: CustomerPayload): CustomerResult {
       phone,
       zone,
       packageName,
-      monthlyPrice,
+      monthlyPrice: customerPackage.monthlyPrice,
+      connectionType,
       password,
     },
   }
@@ -217,7 +238,7 @@ export async function GET() {
     admin
       .from('connections')
       .select(
-        'id, user_id, package_name, monthly_price, status, start_date, renewal_date, created_at, deleted_at'
+        'id, user_id, package_name, monthly_price, connection_type, status, start_date, renewal_date, created_at, deleted_at'
       ),
 
     admin
@@ -397,13 +418,14 @@ export async function POST(request: Request) {
       user_id: userId,
       package_name: customer.packageName,
       monthly_price: customer.monthlyPrice,
+      connection_type: customer.connectionType,
       status: 'active',
       start_date: today,
       renewal_date: getRenewalDate(new Date(today)),
       deleted_at: null,
     })
     .select(
-      'id, user_id, package_name, monthly_price, status, start_date, renewal_date, created_at, deleted_at'
+      'id, user_id, package_name, monthly_price, connection_type, status, start_date, renewal_date, created_at, deleted_at'
     )
     .single()
 
@@ -462,21 +484,21 @@ export async function PATCH(request: Request) {
   const authorization = await requirePrivilegedUser()
   if ('error' in authorization) return authorization.error
 
-  let payload: { id?: string; connectionId?: string; customerId?: string; name?: string; phone?: string; zone?: string; packageName?: string; monthlyPrice?: number }
+  let payload: { id?: string; connectionId?: string; customerId?: string; name?: string; phone?: string; zone?: string; packageName?: string; monthlyPrice?: number; connectionType?: string }
   try {
     payload = await request.json()
   } catch {
     return apiError('Invalid request body.', 400)
   }
 
-  if (!payload.id || !payload.connectionId || !payload.customerId?.trim() || !payload.name?.trim() || !payload.phone?.trim() || !payload.zone?.trim() || !payload.packageName?.trim() || !Number.isFinite(payload.monthlyPrice) || payload.monthlyPrice! < 0) {
+  if (!payload.id || !payload.connectionId || !payload.customerId?.trim() || !payload.name?.trim() || !payload.phone?.trim() || !payload.zone?.trim() || !payload.packageName?.trim() || !Number.isFinite(payload.monthlyPrice) || payload.monthlyPrice! < 0 || !isConnectionType(payload.connectionType?.trim() ?? '')) {
     return apiError('Complete every customer field and provide a valid monthly bill.', 400)
   }
 
   const admin = createAdminClient()
   const [{ data: profile, error: profileError }, { data: connection, error: connectionError }] = await Promise.all([
     admin.from('profiles').update({ customer_id: payload.customerId.trim(), name: payload.name.trim(), phone: payload.phone.trim(), zone: payload.zone.trim() }).eq('id', payload.id).eq('role', 'user').is('deleted_at', null).select('id, customer_id, name, phone, zone, role, created_at, deleted_at').single(),
-    admin.from('connections').update({ package_name: payload.packageName.trim(), monthly_price: payload.monthlyPrice }).eq('id', payload.connectionId).eq('user_id', payload.id).is('deleted_at', null).select('id, user_id, package_name, monthly_price, status, start_date, renewal_date, created_at, deleted_at').single(),
+    admin.from('connections').update({ package_name: payload.packageName.trim(), monthly_price: payload.monthlyPrice, connection_type: payload.connectionType!.trim() }).eq('id', payload.connectionId).eq('user_id', payload.id).is('deleted_at', null).select('id, user_id, package_name, monthly_price, connection_type, status, start_date, renewal_date, created_at, deleted_at').single(),
   ])
 
   if (profileError || connectionError || !profile || !connection) {
