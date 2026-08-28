@@ -1,7 +1,11 @@
 'use client'
 
+import { useState } from 'react'
+
 import {
   DollarSign,
+  Eye,
+  EyeOff,
   Phone,
   Trash2,
   User as UserIcon,
@@ -19,6 +23,7 @@ interface UserCardProps {
   onManage?: (user: User) => void
   onEmail?: (user: User) => void
   onDelete?: (user: User) => void
+  showMikroTikPassword?: boolean
 }
 
 export const UserCard: React.FC<UserCardProps> = ({
@@ -27,7 +32,9 @@ export const UserCard: React.FC<UserCardProps> = ({
   onManage,
   onEmail,
   onDelete,
+  showMikroTikPassword = false,
 }) => {
+  const [isMikroTikPasswordVisible, setIsMikroTikPasswordVisible] = useState(false)
   const getSubscriptionBadge = (status: string) => {
     if (user.deleted) {
       return (
@@ -97,7 +104,7 @@ export const UserCard: React.FC<UserCardProps> = ({
 
           <div className="flex-1">
             <h3 className="font-semibold text-foreground">
-              {user.name}
+              Customer Name: {user.name}
             </h3>
 
             <p className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -113,6 +120,29 @@ export const UserCard: React.FC<UserCardProps> = ({
       {/* Details */}
       <div className="mb-4 grid grid-cols-2 gap-4">
         <div>
+          <p className="mb-1 text-xs text-muted-foreground">Username</p>
+          <p className="font-medium text-foreground">{user.username || 'Not set'}</p>
+        </div>
+
+        {showMikroTikPassword && (
+          <div>
+            <p className="mb-1 text-xs text-muted-foreground">MikroTik Password</p>
+            <div className="flex items-center gap-1">
+              <p className="font-medium text-foreground">
+                {connection?.mikrotikPassword
+                  ? isMikroTikPasswordVisible ? connection.mikrotikPassword : '••••••••'
+                  : 'Not set'}
+              </p>
+              {connection?.mikrotikPassword && (
+                <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsMikroTikPasswordVisible(value => !value)} aria-label={isMikroTikPasswordVisible ? 'Hide MikroTik password' : 'Show MikroTik password'}>
+                  {isMikroTikPasswordVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div>
           <p className="mb-1 text-xs text-muted-foreground">
             Customer ID
           </p>
@@ -120,6 +150,26 @@ export const UserCard: React.FC<UserCardProps> = ({
           <p className="font-medium text-foreground">
             {user.customerId || user.id}
           </p>
+        </div>
+
+        <div>
+          <p className="mb-1 text-xs text-muted-foreground">Connection date</p>
+          <p className="font-medium text-foreground">{connection?.connectionDate || 'Not set'}</p>
+        </div>
+
+        <div>
+          <p className="mb-1 text-xs text-muted-foreground">ONU receive power</p>
+          <p className="font-medium text-foreground">{connection?.onuReceivePower || 'Not set'}</p>
+        </div>
+
+        <div>
+          <p className="mb-1 text-xs text-muted-foreground">ONU MAC address</p>
+          <p className="font-medium text-foreground">{connection?.onuMacAddress || 'Not set'}</p>
+        </div>
+
+        <div>
+          <p className="mb-1 text-xs text-muted-foreground">PON number</p>
+          <p className="font-medium text-foreground">{connection?.ponNumber || 'Not set'}</p>
         </div>
 
         <div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Pencil, Plus, Search, Users, X } from 'lucide-react'
+import { Eye, EyeOff, Pencil, Plus, Search, Users, X } from 'lucide-react'
 
 import { UserCard } from '@/components/cards/UserCard'
 import { Button } from '@/components/ui/button'
@@ -13,11 +13,17 @@ import { CONNECTION_TYPES, CUSTOMER_PACKAGES, CUSTOMER_ZONES } from '@/lib/utils
 type FormValues = {
   customerId: string
   name: string
+  username: string
   phone: string
   zone: string
   packageName: string
   monthlyPrice: string
   connectionType: string
+  connectionDate: string
+  onuReceivePower: string
+  onuMacAddress: string
+  ponNumber: string
+  mikrotikPassword: string
   email: string
   password: string
 }
@@ -25,11 +31,17 @@ type FormValues = {
 const blank = (): FormValues => ({
   customerId: `CCN-${Date.now().toString().slice(-6)}`,
   name: '',
+  username: '',
   phone: '',
   zone: '',
   packageName: '',
   monthlyPrice: '',
   connectionType: '',
+  connectionDate: '',
+  onuReceivePower: '',
+  onuMacAddress: '',
+  ponNumber: '',
+  mikrotikPassword: '',
   email: '',
   password: '',
 })
@@ -38,6 +50,7 @@ const toUser = (customer: AdminCustomer): User => ({
   id: customer.id,
   customerId: customer.customer_id ?? undefined,
   name: customer.name ?? 'Unnamed customer',
+  username: customer.username ?? undefined,
   phone: customer.phone ?? '',
   zone: customer.zone ?? undefined,
   role: 'user',
@@ -58,6 +71,11 @@ const toConnection = (
         packageName: customer.connection.package_name,
         monthlyPrice: customer.connection.monthly_price,
         connectionType: customer.connection.connection_type,
+        connectionDate: customer.connection.connection_date,
+        onuReceivePower: customer.connection.onu_receive_power,
+        onuMacAddress: customer.connection.onu_mac_address,
+        ponNumber: customer.connection.pon_number,
+        mikrotikPassword: customer.connection.mikrotik_password,
         status:
           customer.connection_status === 'active'
             ? 'active'
@@ -85,6 +103,7 @@ export default function AdminUsers() {
   const [form, setForm] = useState<FormValues>(blank)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
+  const [showMikroTikPassword, setShowMikroTikPassword] = useState(false)
 
   const setField = (field: keyof FormValues, value: string) => {
     setForm(current => ({
@@ -186,6 +205,7 @@ export default function AdminUsers() {
     return customers.filter(customer => {
       const text = `
         ${customer.name ?? ''}
+        ${customer.username ?? ''}
         ${customer.phone ?? ''}
         ${customer.customer_id ?? ''}
         ${customer.zone ?? ''}
@@ -247,6 +267,7 @@ export default function AdminUsers() {
     setForm({
       customerId: customer.customer_id ?? '',
       name: customer.name ?? '',
+      username: customer.username ?? '',
       phone: customer.phone ?? '',
       zone: customer.zone ?? '',
       packageName:
@@ -255,6 +276,11 @@ export default function AdminUsers() {
         customer.connection?.monthly_price ?? ''
       ),
       connectionType: customer.connection?.connection_type ?? '',
+      connectionDate: customer.connection?.connection_date ?? '',
+      onuReceivePower: customer.connection?.onu_receive_power ?? '',
+      onuMacAddress: customer.connection?.onu_mac_address ?? '',
+      ponNumber: customer.connection?.pon_number ?? '',
+      mikrotikPassword: customer.connection?.mikrotik_password ?? '',
       email: '',
       password: '',
     })
@@ -270,6 +296,7 @@ export default function AdminUsers() {
     if (
       !form.customerId.trim() ||
       !form.name.trim() ||
+      !form.username.trim() ||
       !form.zone.trim() ||
       !form.phone.trim() ||
       !form.packageName.trim() ||
@@ -307,11 +334,17 @@ export default function AdminUsers() {
           body: JSON.stringify({
             customerId: form.customerId.trim(),
             name: form.name.trim(),
+            username: form.username.trim(),
             zone: form.zone.trim(),
             phone: form.phone.trim(),
             packageName: form.packageName.trim(),
             monthlyPrice,
             connectionType: form.connectionType,
+            connectionDate: form.connectionDate,
+            onuReceivePower: form.onuReceivePower,
+            onuMacAddress: form.onuMacAddress,
+            ponNumber: form.ponNumber,
+            mikrotikPassword: form.mikrotikPassword,
             email: form.email.trim(),
             password: form.password,
           }),
@@ -369,11 +402,17 @@ export default function AdminUsers() {
             connectionId: editing.connection.id,
             customerId: form.customerId.trim(),
             name: form.name.trim(),
+            username: form.username.trim(),
             phone: form.phone.trim(),
             zone: form.zone.trim(),
             packageName: form.packageName.trim(),
             monthlyPrice,
             connectionType: form.connectionType,
+            connectionDate: form.connectionDate,
+            onuReceivePower: form.onuReceivePower,
+            onuMacAddress: form.onuMacAddress,
+            ponNumber: form.ponNumber,
+            mikrotikPassword: form.mikrotikPassword,
           }),
         }
       )
@@ -439,11 +478,17 @@ export default function AdminUsers() {
     [keyof FormValues, string, string]
   > = [
     ['customerId', 'Customer ID', 'CCN-000001'],
-    ['name', 'Customer name', 'Full name'],
+    ['username', 'Username', 'arun01'],
+    ['name', 'Customer Name', 'Full name'],
     ['zone', 'Zone / area', 'Area or zone'],
     ['phone', 'Contact number', '01XXXXXXXXX'],
     ['packageName', 'Package name', 'e.g. Gold 50 Mbps'],
     ['monthlyPrice', 'Monthly bill amount (৳)', '0'],
+    ['connectionDate', 'Connection Date', 'YYYY-MM-DD'],
+    ['onuReceivePower', 'ONU Receive Power', '-25 dBm'],
+    ['onuMacAddress', 'ONU MAC Address', '00:00:00:00:00:00'],
+    ['ponNumber', 'PON Number', 'PON-1'],
+    ['mikrotikPassword', 'MikroTik Password', 'Network credential'],
   ]
 
   return (
@@ -572,6 +617,7 @@ export default function AdminUsers() {
               key={customer.id}
               user={toUser(customer)}
               connection={toConnection(customer)}
+              showMikroTikPassword
               onManage={
                 customer.deleted_at
                   ? undefined
@@ -656,7 +702,34 @@ export default function AdminUsers() {
               </label>
 
               <label className="text-sm font-medium text-foreground">
-                Customer name
+                Username
+                <Input
+                  value={form.username}
+                  onChange={event => setField('username', event.target.value)}
+                  placeholder="arun01"
+                  className="mt-2 h-11"
+                  required
+                />
+              </label>
+
+              <label className="text-sm font-medium text-foreground">
+                MikroTik Password
+                <div className="relative mt-2">
+                  <Input
+                    type={showMikroTikPassword ? 'text' : 'password'}
+                    value={form.mikrotikPassword}
+                    onChange={event => setField('mikrotikPassword', event.target.value)}
+                    placeholder="Network credential"
+                    className="h-11 pr-10"
+                  />
+                  <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-11 w-10" onClick={() => setShowMikroTikPassword(value => !value)} aria-label={showMikroTikPassword ? 'Hide MikroTik password' : 'Show MikroTik password'}>
+                    {showMikroTikPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </label>
+
+              <label className="text-sm font-medium text-foreground">
+                Customer Name
                 <Input
                   value={form.name}
                   onChange={event =>
@@ -753,6 +826,31 @@ export default function AdminUsers() {
                     </option>
                   ))}
                 </select>
+              </label>
+
+              <label className="text-sm font-medium text-foreground">
+                Connection Date
+                <Input
+                  type="date"
+                  value={form.connectionDate}
+                  onChange={event => setField('connectionDate', event.target.value)}
+                  className="mt-2 h-11"
+                />
+              </label>
+
+              <label className="text-sm font-medium text-foreground">
+                ONU Receive Power
+                <Input value={form.onuReceivePower} onChange={event => setField('onuReceivePower', event.target.value)} placeholder="-25 dBm" className="mt-2 h-11" />
+              </label>
+
+              <label className="text-sm font-medium text-foreground">
+                ONU MAC Address
+                <Input value={form.onuMacAddress} onChange={event => setField('onuMacAddress', event.target.value)} placeholder="00:00:00:00:00:00" className="mt-2 h-11" />
+              </label>
+
+              <label className="text-sm font-medium text-foreground">
+                PON Number
+                <Input value={form.ponNumber} onChange={event => setField('ponNumber', event.target.value)} placeholder="PON-1" className="mt-2 h-11" />
               </label>
 
               <label className="text-sm font-medium text-foreground">
@@ -870,7 +968,7 @@ export default function AdminUsers() {
                 ([field, label, placeholder]) => (
                   <label
                     key={field}
-                    className="text-sm font-medium text-foreground"
+                    className="relative text-sm font-medium text-foreground"
                   >
                     {label}
 
@@ -878,6 +976,8 @@ export default function AdminUsers() {
                       type={
                         field === 'monthlyPrice'
                           ? 'number'
+                          : field === 'mikrotikPassword'
+                            ? showMikroTikPassword ? 'text' : 'password'
                           : 'text'
                       }
                       min={
@@ -893,9 +993,14 @@ export default function AdminUsers() {
                         )
                       }
                       placeholder={placeholder}
-                      className="mt-2 h-11"
+                      className={`mt-2 h-11 ${field === 'mikrotikPassword' ? 'pr-10' : ''}`}
                       required
                     />
+                    {field === 'mikrotikPassword' && (
+                      <Button type="button" variant="ghost" size="icon" className="absolute bottom-0 right-0 h-11 w-10" onClick={() => setShowMikroTikPassword(value => !value)} aria-label={showMikroTikPassword ? 'Hide MikroTik password' : 'Show MikroTik password'}>
+                        {showMikroTikPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    )}
                   </label>
                 )
               )}

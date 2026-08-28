@@ -10,24 +10,36 @@ export const runtime = 'nodejs'
 type CustomerPayload = {
   customerId?: unknown
   name?: unknown
+  username?: unknown
   email?: unknown
   phone?: unknown
   zone?: unknown
   packageName?: unknown
   monthlyPrice?: unknown
   connectionType?: unknown
+  connectionDate?: unknown
+  onuReceivePower?: unknown
+  onuMacAddress?: unknown
+  ponNumber?: unknown
+  mikrotikPassword?: unknown
   password?: unknown
 }
 
 type NormalizedCustomer = {
   customerId: string
   name: string
+  username: string
   email: string
   phone: string
   zone: string
   packageName: string
   monthlyPrice: number
   connectionType: string
+  connectionDate: string
+  onuReceivePower: string
+  onuMacAddress: string
+  ponNumber: string
+  mikrotikPassword: string
   password: string
 }
 
@@ -47,6 +59,8 @@ function normalizeCustomer(payload: CustomerPayload): CustomerResult {
 
   const name =
     typeof payload.name === 'string' ? payload.name.trim() : ''
+  const username =
+    typeof payload.username === 'string' ? payload.username.trim().toLowerCase() : ''
 
   const email =
     typeof payload.email === 'string'
@@ -71,10 +85,16 @@ function normalizeCustomer(payload: CustomerPayload): CustomerResult {
 
   const password =
     typeof payload.password === 'string' ? payload.password : ''
+  const connectionDate = typeof payload.connectionDate === 'string' ? payload.connectionDate.trim() : ''
+  const onuReceivePower = typeof payload.onuReceivePower === 'string' ? payload.onuReceivePower.trim() : ''
+  const onuMacAddress = typeof payload.onuMacAddress === 'string' ? payload.onuMacAddress.trim() : ''
+  const ponNumber = typeof payload.ponNumber === 'string' ? payload.ponNumber.trim() : ''
+  const mikrotikPassword = typeof payload.mikrotikPassword === 'string' ? payload.mikrotikPassword : ''
 
   if (
     !customerId ||
     !name ||
+    !username ||
     !email ||
     !phone ||
     !zone ||
@@ -129,12 +149,18 @@ function normalizeCustomer(payload: CustomerPayload): CustomerResult {
     customer: {
       customerId,
       name,
+      username,
       email,
       phone,
       zone,
       packageName,
       monthlyPrice: customerPackage.monthlyPrice,
       connectionType,
+      connectionDate,
+      onuReceivePower,
+      onuMacAddress,
+      ponNumber,
+      mikrotikPassword,
       password,
     },
   }
@@ -230,7 +256,7 @@ export async function GET() {
     admin
       .from('profiles')
       .select(
-        'id, customer_id, name, phone, zone, role, created_at, deleted_at'
+        'id, customer_id, name, username, phone, zone, role, created_at, deleted_at'
       )
       .eq('role', 'user')
       .order('created_at', { ascending: false }),
@@ -238,7 +264,7 @@ export async function GET() {
     admin
       .from('connections')
       .select(
-        'id, user_id, package_name, monthly_price, connection_type, status, start_date, renewal_date, billing_start_date, created_at, deleted_at'
+        'id, user_id, package_name, monthly_price, connection_type, connection_date, onu_receive_power, onu_mac_address, pon_number, mikrotik_password, status, start_date, renewal_date, billing_start_date, created_at, deleted_at'
       ),
 
     admin
@@ -298,12 +324,14 @@ export async function POST(request: Request) {
   const [
     { data: matchingPhone, error: phoneError },
     { data: matchingCustomerId, error: customerIdError },
+    { data: matchingUsername, error: usernameError },
   ] = await Promise.all([
     admin
       .from('profiles')
       .select('id')
       .eq('phone', customer.phone)
       .maybeSingle(),
+    admin.from('profiles').select('id').eq('username', customer.username).maybeSingle(),
 
     admin
       .from('profiles')
@@ -323,6 +351,10 @@ export async function POST(request: Request) {
 
     return apiError('Unable to validate customer ID.', 500)
   }
+  if (usernameError) {
+    console.error('Username duplicate check failed:', usernameError)
+    return apiError('Unable to validate username.', 500)
+  }
 
   if (matchingPhone) {
     return apiError(
@@ -337,6 +369,7 @@ export async function POST(request: Request) {
       409
     )
   }
+  if (matchingUsername) return apiError('This username is already taken. Please choose another one.', 409)
 
   try {
     if (await emailAlreadyExists(customer.email)) {
@@ -389,13 +422,14 @@ export async function POST(request: Request) {
       id: userId,
       customer_id: customer.customerId,
       name: customer.name,
+      username: customer.username,
       phone: customer.phone,
       zone: customer.zone,
       role: 'user',
       deleted_at: null,
     })
     .select(
-      'id, customer_id, name, phone, zone, role, created_at, deleted_at'
+      'id, customer_id, name, username, phone, zone, role, created_at, deleted_at'
     )
     .single()
 
@@ -420,6 +454,11 @@ export async function POST(request: Request) {
       package_name: customer.packageName,
       monthly_price: customer.monthlyPrice,
       connection_type: customer.connectionType,
+      connection_date: customer.connectionDate || null,
+      onu_receive_power: customer.onuReceivePower || null,
+      onu_mac_address: customer.onuMacAddress || null,
+      pon_number: customer.ponNumber || null,
+      mikrotik_password: customer.mikrotikPassword || null,
       status: 'active',
       start_date: billingStartDate,
       billing_start_date: billingStartDate,
@@ -427,7 +466,7 @@ export async function POST(request: Request) {
       deleted_at: null,
     })
     .select(
-      'id, user_id, package_name, monthly_price, connection_type, status, start_date, renewal_date, billing_start_date, created_at, deleted_at'
+      'id, user_id, package_name, monthly_price, connection_type, connection_date, onu_receive_power, onu_mac_address, pon_number, mikrotik_password, status, start_date, renewal_date, billing_start_date, created_at, deleted_at'
     )
     .single()
 
@@ -490,21 +529,26 @@ export async function PATCH(request: Request) {
   const authorization = await requirePrivilegedUser()
   if ('error' in authorization) return authorization.error
 
-  let payload: { id?: string; connectionId?: string; customerId?: string; name?: string; phone?: string; zone?: string; packageName?: string; monthlyPrice?: number; connectionType?: string }
+  let payload: { id?: string; connectionId?: string; customerId?: string; name?: string; username?: string; phone?: string; zone?: string; packageName?: string; monthlyPrice?: number; connectionType?: string; connectionDate?: string; onuReceivePower?: string; onuMacAddress?: string; ponNumber?: string; mikrotikPassword?: string }
   try {
     payload = await request.json()
   } catch {
     return apiError('Invalid request body.', 400)
   }
 
-  if (!payload.id || !payload.connectionId || !payload.customerId?.trim() || !payload.name?.trim() || !payload.phone?.trim() || !payload.zone?.trim() || !payload.packageName?.trim() || !Number.isFinite(payload.monthlyPrice) || payload.monthlyPrice! < 0 || !isConnectionType(payload.connectionType?.trim() ?? '')) {
+  const customerPackage = getCustomerPackage(payload.packageName?.trim() ?? '')
+  if (!payload.id || !payload.connectionId || !payload.customerId?.trim() || !payload.name?.trim() || !payload.username?.trim() || !payload.phone?.trim() || !payload.zone?.trim() || !customerPackage || !isCustomerZone(payload.zone.trim()) || !isConnectionType(payload.connectionType?.trim() ?? '')) {
     return apiError('Complete every customer field and provide a valid monthly bill.', 400)
   }
 
   const admin = createAdminClient()
+  const username = payload.username.trim().toLowerCase()
+  const { data: matchingUsername, error: usernameError } = await admin.from('profiles').select('id').eq('username', username).neq('id', payload.id).maybeSingle()
+  if (usernameError) return apiError('Unable to validate username.', 500)
+  if (matchingUsername) return apiError('This username is already taken. Please choose another one.', 409)
   const [{ data: profile, error: profileError }, { data: connection, error: connectionError }] = await Promise.all([
-    admin.from('profiles').update({ customer_id: payload.customerId.trim(), name: payload.name.trim(), phone: payload.phone.trim(), zone: payload.zone.trim() }).eq('id', payload.id).eq('role', 'user').is('deleted_at', null).select('id, customer_id, name, phone, zone, role, created_at, deleted_at').single(),
-    admin.from('connections').update({ package_name: payload.packageName.trim(), monthly_price: payload.monthlyPrice, connection_type: payload.connectionType!.trim() }).eq('id', payload.connectionId).eq('user_id', payload.id).is('deleted_at', null).select('id, user_id, package_name, monthly_price, connection_type, status, start_date, renewal_date, billing_start_date, created_at, deleted_at').single(),
+    admin.from('profiles').update({ customer_id: payload.customerId.trim(), name: payload.name.trim(), username, phone: payload.phone.trim(), zone: payload.zone.trim() }).eq('id', payload.id).eq('role', 'user').is('deleted_at', null).select('id, customer_id, name, username, phone, zone, role, created_at, deleted_at').single(),
+    admin.from('connections').update({ package_name: customerPackage.name, monthly_price: customerPackage.monthlyPrice, connection_type: payload.connectionType!.trim(), connection_date: payload.connectionDate?.trim() || null, onu_receive_power: payload.onuReceivePower?.trim() || null, onu_mac_address: payload.onuMacAddress?.trim() || null, pon_number: payload.ponNumber?.trim() || null, mikrotik_password: payload.mikrotikPassword || null }).eq('id', payload.connectionId).eq('user_id', payload.id).is('deleted_at', null).select('id, user_id, package_name, monthly_price, connection_type, connection_date, onu_receive_power, onu_mac_address, pon_number, mikrotik_password, status, start_date, renewal_date, billing_start_date, created_at, deleted_at').single(),
   ])
 
   if (profileError || connectionError || !profile || !connection) {

@@ -6,6 +6,7 @@ export interface User {
   phone: string
   email?: string
   name: string
+  username?: string
   role: 'owner' | 'admin' | 'user'
   subscriptionStatus: 'active' | 'inactive' | 'expired'
   joinDate: string
@@ -23,6 +24,11 @@ export interface Connection {
   name: string
   packageName?: string
   connectionType?: string | null
+  connectionDate?: string | null
+  onuReceivePower?: string | null
+  onuMacAddress?: string | null
+  ponNumber?: string | null
+  mikrotikPassword?: string | null
   activationDate: string
   expirationDate: string
   status: 'active' | 'expired' | 'pending'

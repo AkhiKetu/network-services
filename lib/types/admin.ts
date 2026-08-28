@@ -8,6 +8,7 @@ export interface AdminProfile {
   id: string
   customer_id: string | null
   name: string | null
+  username: string | null
   phone: string | null
   zone: string | null
   role: 'owner' | 'admin' | 'user'
@@ -21,6 +22,11 @@ export interface AdminConnection {
   package_name: string
   monthly_price: number
   connection_type: string | null
+  connection_date: string | null
+  onu_receive_power: string | null
+  onu_mac_address: string | null
+  pon_number: string | null
+  mikrotik_password: string | null
   status: 'active' | 'expired' | 'pending'
   start_date: string
   renewal_date: string
