@@ -5,9 +5,9 @@ import { getConnectionStatus } from '@/lib/utils/connectionStatus'
 import type { AdminBilling, AdminCollection, AdminConnection, AdminCustomer, AdminNotification, AdminProfile, RecentCollection } from '@/lib/types/admin'
 
 const PROFILE_FIELDS = 'id, customer_id, name, phone, zone, role, created_at, deleted_at'
-const CONNECTION_FIELDS = 'id, user_id, package_name, monthly_price, connection_type, status, start_date, renewal_date, created_at, deleted_at'
-const BILLING_FIELDS = 'id, user_id, connection_id, amount, billing_month, due_date, status, paid_at, created_at'
-const COLLECTION_FIELDS = 'id, user_id, billing_id, amount, payment_method, reference_note, collected_by, created_at'
+const CONNECTION_FIELDS = 'id, user_id, package_name, monthly_price, connection_type, status, start_date, renewal_date, billing_start_date, created_at, deleted_at'
+const BILLING_FIELDS = 'id, user_id, connection_id, amount, billing_month, due_date, status, paid_at, customer_id_snapshot, customer_name_snapshot, zone_snapshot, package_name_snapshot, created_at'
+const COLLECTION_FIELDS = 'id, user_id, billing_id, connection_id, amount, payment_method, reference_note, collected_by, billing_month, customer_id_snapshot, customer_name_snapshot, zone_snapshot, package_name_snapshot, created_at'
 
 export async function loadAdminBusinessData(admin: SupabaseClient, options?: { notifications?: boolean }) {
   const requests = [
@@ -43,7 +43,9 @@ export function toCustomers(
   return profiles.map(profile => {
     const connection = connections.find(item => item.user_id === profile.id && !item.deleted_at) ?? null
     const unpaid = connection
-      ? billings.find(item => item.connection_id === connection.id && item.status === 'unpaid') ?? null
+      ? billings
+          .filter(item => item.connection_id === connection.id && item.status === 'unpaid')
+          .sort((left, right) => left.billing_month.localeCompare(right.billing_month))[0] ?? null
       : null
     return { ...profile, connection, connection_status: connection ? getConnectionStatus(connection) : null, unpaid_billing: unpaid }
   })

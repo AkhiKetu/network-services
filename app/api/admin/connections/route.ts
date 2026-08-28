@@ -16,13 +16,14 @@ export async function GET() {
 export async function PATCH(request: Request) {
   try {
     const { admin } = await requireAdmin()
-    const body = await request.json() as { id?: string; packageName?: string; monthlyPrice?: number; connectionType?: string; startDate?: string; renewalDate?: string; status?: 'active' | 'expired' | 'pending' }
+    const body = await request.json() as { id?: string; packageName?: string; monthlyPrice?: number; connectionType?: string; startDate?: string; billingStartDate?: string; renewalDate?: string; status?: 'active' | 'expired' | 'pending' }
     if (!body.id) return NextResponse.json({ error: 'Connection is required.' }, { status: 400 })
     const update: Record<string, string | number> = {}
     if (typeof body.packageName === 'string' && body.packageName.trim()) update.package_name = body.packageName.trim()
     if (typeof body.monthlyPrice === 'number' && Number.isFinite(body.monthlyPrice) && body.monthlyPrice >= 0) update.monthly_price = body.monthlyPrice
     if (typeof body.connectionType === 'string' && isConnectionType(body.connectionType.trim())) update.connection_type = body.connectionType.trim()
     if (typeof body.startDate === 'string') update.start_date = body.startDate
+    if (typeof body.billingStartDate === 'string') update.billing_start_date = body.billingStartDate
     if (typeof body.renewalDate === 'string') update.renewal_date = body.renewalDate
     if (body.status) update.status = body.status
     if (!Object.keys(update).length) return NextResponse.json({ error: 'No valid changes were provided.' }, { status: 400 })

@@ -32,7 +32,7 @@ export default function AdminAnalytics() {
   if (error) return <Message error={error} />
   if (!data || !report) return <Message>Loading analytics…</Message>
 
-  const stats = getAdminBillingMetrics(data.profiles, data.connections, data.collections)
+  const stats = getAdminBillingMetrics(data.profiles, data.connections, data.billings, data.collections)
   const cards = [
     ['Monthly Total Bill', money(stats.monthlyTotalBill), DollarSign],
     ['Yearly Total Bill', money(stats.yearlyTotalBill), TrendingUp],

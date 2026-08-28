@@ -20,7 +20,7 @@ export const ConnectionCard: React.FC<ConnectionCardProps> = ({
   onRenew,
   showUser = false,
   userName,
-  expiringSoonDays = 30
+  expiringSoonDays = 3
 }) => {
   const daysRemaining = getDaysRemaining(connection.expirationDate)
   const isExpiredStatus = isExpired(connection.expirationDate)

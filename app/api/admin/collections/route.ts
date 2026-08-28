@@ -8,14 +8,31 @@ import { getRenewalDate } from '@/lib/utils/dateUtils'
 
 const METHODS = new Set<PaymentMethod>(['cash', 'bkash', 'nagad', 'bank'])
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const { admin } = await requireAdmin()
     const { profiles, connections, billings, collections } = await loadAdminBusinessData(admin)
 
+    const requestedMonth = new URL(request.url).searchParams.get('month')
+    const selectedMonth = /^\d{4}-\d{2}$/.test(requestedMonth ?? '')
+      ? `${requestedMonth}-01`
+      : `${new Date().toISOString().slice(0, 7)}-01`
+    const paymentsByBilling = new Map<string, typeof collections>()
+    for (const payment of collections) {
+      if (payment.billing_id) paymentsByBilling.set(payment.billing_id, [...(paymentsByBilling.get(payment.billing_id) ?? []), payment])
+    }
+    const history = billings.filter(billing => billing.billing_month === selectedMonth).map(billing => {
+      const payments = paymentsByBilling.get(billing.id) ?? []
+      const amountPaid = payments.reduce((sum, payment) => sum + Number(payment.amount), 0)
+      return { ...billing, amount_paid: amountPaid, unpaid_amount: Math.max(Number(billing.amount) - amountPaid, 0), payment_dates: payments.map(payment => payment.created_at), payment_status: amountPaid >= Number(billing.amount) ? 'paid' : amountPaid > 0 ? 'partial' : 'unpaid' }
+    })
     return NextResponse.json({
       customers: toCustomers(profiles.filter(profile => profile.role === 'user' && !profile.deleted_at), connections, billings),
       records: toRecentCollections(collections, profiles),
+      selectedMonth,
+      availableMonths: Array.from(new Set(billings.map(billing => billing.billing_month))).sort().reverse(),
+      history,
+      totals: { expected: history.reduce((sum, item) => sum + Number(item.amount), 0), collected: history.reduce((sum, item) => sum + item.amount_paid, 0), unpaid: history.reduce((sum, item) => sum + item.unpaid_amount, 0) },
     })
   } catch (error) {
     return errorResponse(error)
@@ -39,8 +56,8 @@ export async function POST(request: Request) {
     }
 
     const [{ data: profile, error: profileError }, { data: connection, error: connectionError }] = await Promise.all([
-      admin.from('profiles').select('id').eq('id', body.userId).eq('role', 'user').is('deleted_at', null).maybeSingle(),
-      admin.from('connections').select('id, user_id, monthly_price, status, renewal_date, deleted_at').eq('user_id', body.userId).is('deleted_at', null).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+      admin.from('profiles').select('id, customer_id, name, zone').eq('id', body.userId).eq('role', 'user').is('deleted_at', null).maybeSingle(),
+      admin.from('connections').select('id, user_id, package_name, monthly_price, status, renewal_date, deleted_at').eq('user_id', body.userId).is('deleted_at', null).order('created_at', { ascending: false }).limit(1).maybeSingle(),
     ])
     if (profileError || connectionError) throw profileError ?? connectionError
     if (!profile || !connection) return NextResponse.json({ error: 'This customer does not have an active business record.' }, { status: 400 })
@@ -57,22 +74,35 @@ export async function POST(request: Request) {
       .limit(1)
       .maybeSingle()
     if (billingError) throw billingError
+    if (!currentBilling) return NextResponse.json({ error: 'There is no unpaid bill available for this customer.' }, { status: 400 })
+
+    const { data: previousPayments, error: previousPaymentsError } = await admin
+      .from('collections').select('amount').eq('billing_id', currentBilling.id)
+    if (previousPaymentsError) throw previousPaymentsError
+    const currentPaid = (previousPayments ?? []).reduce((sum, item) => sum + Number(item.amount), 0)
+    if (amount > Math.max(Number(currentBilling.amount) - currentPaid, 0)) {
+      return NextResponse.json({ error: 'Payment cannot be greater than the remaining bill amount.' }, { status: 400 })
+    }
 
     const { data: collection, error: collectionError } = await admin
       .from('collections')
       .insert({
         user_id: body.userId,
-        billing_id: currentBilling?.id ?? null,
+        billing_id: currentBilling.id,
+        connection_id: connection.id,
         amount,
         payment_method: paymentMethod,
         reference_note: typeof body.referenceNote === 'string' ? body.referenceNote.trim() || null : null,
         collected_by: user.id,
+        billing_month: currentBilling.billing_month,
+        customer_id_snapshot: profile.customer_id,
+        customer_name_snapshot: profile.name,
+        zone_snapshot: profile.zone,
+        package_name_snapshot: connection.package_name,
       })
       .select('id')
       .single()
     if (collectionError || !collection) throw collectionError ?? new Error('Collection was not created.')
-    if (!currentBilling) return NextResponse.json({ success: true, renewed: false })
-
     const { data: collections, error: collectionsError } = await admin
       .from('collections')
       .select('amount')
@@ -104,7 +134,7 @@ export async function POST(request: Request) {
 
       const { error: renewalError } = await admin
         .from('connections')
-        .update({ renewal_date: renewalDate, status: 'active' })
+        .update({ start_date: wasActive ? connection.renewal_date : new Date().toISOString().slice(0, 10), renewal_date: renewalDate, status: 'active' })
         .eq('id', connection.id)
       if (renewalError) throw renewalError
 
@@ -125,6 +155,10 @@ export async function POST(request: Request) {
           due_date: renewalDate,
           status: 'unpaid',
           paid_at: null,
+          customer_id_snapshot: profile.customer_id,
+          customer_name_snapshot: profile.name,
+          zone_snapshot: profile.zone,
+          package_name_snapshot: connection.package_name,
         })
         if (createBillingError) throw createBillingError
       }

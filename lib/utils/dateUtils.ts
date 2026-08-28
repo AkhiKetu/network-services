@@ -8,20 +8,21 @@ export const formatDate = (date: string | Date): string => {
 }
 
 export const getDaysRemaining = (expirationDate: string): number => {
-  const expiry = new Date(expirationDate)
+  const expiry = dateFromInput(expirationDate)
   const today = new Date()
-  const diffTime = expiry.getTime() - today.getTime()
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  const diffTime = expiry.getTime() - startOfToday.getTime()
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-  return Math.max(0, diffDays)
+  return diffDays
 }
 
-export const isExpiringSoon = (expirationDate: string, days: number = 30): boolean => {
+export const isExpiringSoon = (expirationDate: string, days: number = 3): boolean => {
   const daysRemaining = getDaysRemaining(expirationDate)
   return daysRemaining <= days && daysRemaining > 0
 }
 
 export const isExpired = (expirationDate: string): boolean => {
-  return getDaysRemaining(expirationDate) <= 0
+  return getDaysRemaining(expirationDate) < 0
 }
 
 export const getMonthFromDate = (date: string): string => {

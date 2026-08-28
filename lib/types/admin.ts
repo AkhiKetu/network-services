@@ -24,6 +24,7 @@ export interface AdminConnection {
   status: 'active' | 'expired' | 'pending'
   start_date: string
   renewal_date: string
+  billing_start_date: string | null
   created_at: string | null
   deleted_at: string | null
 }
@@ -37,6 +38,10 @@ export interface AdminBilling {
   due_date: string
   status: BillingStatus
   paid_at: string | null
+  customer_id_snapshot: string | null
+  customer_name_snapshot: string | null
+  zone_snapshot: string | null
+  package_name_snapshot: string | null
   created_at: string | null
 }
 
@@ -44,10 +49,16 @@ export interface AdminCollection {
   id: string
   user_id: string
   billing_id: string | null
+  connection_id: string | null
   amount: number
   payment_method: PaymentMethod
   reference_note: string | null
   collected_by: string
+  billing_month: string | null
+  customer_id_snapshot: string | null
+  customer_name_snapshot: string | null
+  zone_snapshot: string | null
+  package_name_snapshot: string | null
   created_at: string
 }
 

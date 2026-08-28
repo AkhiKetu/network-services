@@ -2,12 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import {
-  ArrowUpRight,
-  Check,
-  Flame,
-  X,
-} from "lucide-react";
+import { ArrowUpRight, Check, Flame, X } from "lucide-react";
 
 interface InternetPackage {
   id: string;
@@ -131,9 +126,7 @@ interface PricingSectionProps {
   onBuyPackage: (packageItem: InternetPackage) => void;
 }
 
-export default function PricingSection({
-  onBuyPackage,
-}: PricingSectionProps) {
+export default function PricingSection({ onBuyPackage }: PricingSectionProps) {
   const [selectedPackage, setSelectedPackage] =
     useState<InternetPackage | null>(null);
 

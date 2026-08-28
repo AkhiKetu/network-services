@@ -4,13 +4,14 @@ import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ArrowRight, Bell, DollarSign, TrendingUp, Users, Wifi } from 'lucide-react'
 import { ConnectionCard } from '@/components/cards/ConnectionCard'
-import type { AdminCollection, AdminConnection, AdminNotification, AdminProfile } from '@/lib/types/admin'
+import type { AdminBilling, AdminCollection, AdminConnection, AdminNotification, AdminProfile } from '@/lib/types/admin'
 import { getAdminBillingMetrics } from '@/lib/utils/adminMetrics'
 import { getConnectionStatus } from '@/lib/utils/connectionStatus'
 
 type DashboardData = {
   profiles: AdminProfile[]
   connections: AdminConnection[]
+  billings: AdminBilling[]
   collections: AdminCollection[]
   notifications: AdminNotification[]
 }
@@ -45,7 +46,7 @@ export default function AdminDashboard() {
   }, [loadDashboard])
 
   const metrics = useMemo(
-    () => data && getAdminBillingMetrics(data.profiles, data.connections, data.collections),
+    () => data && getAdminBillingMetrics(data.profiles, data.connections, data.billings, data.collections),
     [data]
   )
 
@@ -54,9 +55,12 @@ export default function AdminDashboard() {
 
   const cards = [
     ['Monthly Total Bill', money(metrics.monthlyTotalBill), DollarSign],
+    ['Monthly Collected', money(metrics.paidThisMonth), DollarSign],
+    ['Monthly Unpaid', money(metrics.unpaidThisMonth), DollarSign],
     ['Yearly Total Bill', money(metrics.yearlyTotalBill), TrendingUp],
     ['Customers', metrics.customers, Users],
     ['Active Connections', metrics.activeConnections, Wifi],
+    ['Expiring Soon', metrics.expiringSoon, Wifi],
   ] as const
   const unread = data.notifications.filter(notification => !notification.is_read).slice(0, 3)
 
@@ -91,10 +95,10 @@ export default function AdminDashboard() {
 
         <section>
           <h2 className="mb-4 text-lg font-bold">Recent Connections</h2>
-          {data.connections.length ? <div className="grid gap-4 md:grid-cols-2">
-            {data.connections.slice(0, 4).map(connection => {
+          {data.connections.filter(connection => !connection.deleted_at).length ? <div className="grid gap-4 md:grid-cols-2">
+            {data.connections.filter(connection => !connection.deleted_at).slice(0, 4).map(connection => {
               const user = data.profiles.find(profile => profile.id === connection.user_id)
-              return <ConnectionCard key={connection.id} showUser userName={user?.name ?? undefined} expiringSoonDays={5} connection={{ id: connection.id, userId: connection.user_id, name: connection.package_name, packageName: connection.package_name, activationDate: connection.start_date, expirationDate: connection.renewal_date, status: getConnectionStatus(connection) === 'active' ? 'active' : 'expired', monthlyPrice: connection.monthly_price, deleted: Boolean(connection.deleted_at) }} />
+              return <ConnectionCard key={connection.id} showUser userName={user?.name ?? undefined} expiringSoonDays={3} connection={{ id: connection.id, userId: connection.user_id, name: connection.package_name, packageName: connection.package_name, activationDate: connection.start_date, expirationDate: connection.renewal_date, status: getConnectionStatus(connection) === 'active' ? 'active' : 'expired', monthlyPrice: connection.monthly_price, deleted: Boolean(connection.deleted_at) }} />
             })}
           </div> : <div className="rounded-3xl border border-border bg-card p-10 text-center"><Wifi className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />No Connections</div>}
         </section>

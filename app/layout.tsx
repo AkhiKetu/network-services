@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 import { AuthProvider } from "@/lib/context/AuthContext";
-import { AppProvider } from "@/lib/context/AppContext";
 import { ThemeProvider } from "@/lib/context/ThemeContext";
 
 const SITE_URL = "https://ccnetworks.vercel.app";
@@ -107,9 +106,7 @@ export default function RootLayout({
 
       <body>
         <ThemeProvider>
-          <AppProvider>
-            <AuthProvider>{children}</AuthProvider>
-          </AppProvider>
+          <AuthProvider>{children}</AuthProvider>
         </ThemeProvider>
 
         {process.env.NODE_ENV === "production" && <Analytics />}

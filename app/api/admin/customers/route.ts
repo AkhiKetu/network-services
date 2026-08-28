@@ -238,12 +238,12 @@ export async function GET() {
     admin
       .from('connections')
       .select(
-        'id, user_id, package_name, monthly_price, connection_type, status, start_date, renewal_date, created_at, deleted_at'
+        'id, user_id, package_name, monthly_price, connection_type, status, start_date, renewal_date, billing_start_date, created_at, deleted_at'
       ),
 
     admin
       .from('billings')
-      .select('id, user_id, connection_id, amount, billing_month, due_date, status, paid_at, created_at')
+      .select('id, user_id, connection_id, amount, billing_month, due_date, status, paid_at, customer_id_snapshot, customer_name_snapshot, zone_snapshot, package_name_snapshot, created_at')
       .order('created_at', { ascending: false }),
   ])
 
@@ -377,7 +377,8 @@ export async function POST(request: Request) {
   }
 
   const userId = authData.user.id
-  const today = new Date().toISOString().slice(0, 10)
+  const actualActivationDate = new Date().toISOString().slice(0, 10)
+  const billingStartDate = actualActivationDate < '2026-09-01' ? '2026-09-01' : actualActivationDate
 
   const {
     data: profile,
@@ -420,12 +421,13 @@ export async function POST(request: Request) {
       monthly_price: customer.monthlyPrice,
       connection_type: customer.connectionType,
       status: 'active',
-      start_date: today,
-      renewal_date: getRenewalDate(new Date(today)),
+      start_date: billingStartDate,
+      billing_start_date: billingStartDate,
+      renewal_date: getRenewalDate(new Date(`${billingStartDate}T12:00:00`)),
       deleted_at: null,
     })
     .select(
-      'id, user_id, package_name, monthly_price, connection_type, status, start_date, renewal_date, created_at, deleted_at'
+      'id, user_id, package_name, monthly_price, connection_type, status, start_date, renewal_date, billing_start_date, created_at, deleted_at'
     )
     .single()
 
@@ -445,7 +447,7 @@ export async function POST(request: Request) {
     )
   }
 
-  const billingMonth = `${today.slice(0, 7)}-01`
+  const billingMonth = `${billingStartDate.slice(0, 7)}-01`
   const { error: billingInsertError } = await admin
     .from('billings')
     .insert({
@@ -456,6 +458,10 @@ export async function POST(request: Request) {
       due_date: connection.renewal_date,
       status: 'unpaid',
       paid_at: null,
+      customer_id_snapshot: customer.customerId,
+      customer_name_snapshot: customer.name,
+      zone_snapshot: customer.zone,
+      package_name_snapshot: customer.packageName,
     })
 
   if (billingInsertError) {
@@ -498,7 +504,7 @@ export async function PATCH(request: Request) {
   const admin = createAdminClient()
   const [{ data: profile, error: profileError }, { data: connection, error: connectionError }] = await Promise.all([
     admin.from('profiles').update({ customer_id: payload.customerId.trim(), name: payload.name.trim(), phone: payload.phone.trim(), zone: payload.zone.trim() }).eq('id', payload.id).eq('role', 'user').is('deleted_at', null).select('id, customer_id, name, phone, zone, role, created_at, deleted_at').single(),
-    admin.from('connections').update({ package_name: payload.packageName.trim(), monthly_price: payload.monthlyPrice, connection_type: payload.connectionType!.trim() }).eq('id', payload.connectionId).eq('user_id', payload.id).is('deleted_at', null).select('id, user_id, package_name, monthly_price, connection_type, status, start_date, renewal_date, created_at, deleted_at').single(),
+    admin.from('connections').update({ package_name: payload.packageName.trim(), monthly_price: payload.monthlyPrice, connection_type: payload.connectionType!.trim() }).eq('id', payload.connectionId).eq('user_id', payload.id).is('deleted_at', null).select('id, user_id, package_name, monthly_price, connection_type, status, start_date, renewal_date, billing_start_date, created_at, deleted_at').single(),
   ])
 
   if (profileError || connectionError || !profile || !connection) {

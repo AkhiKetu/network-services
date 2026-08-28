@@ -1,117 +1,27 @@
 'use client'
 
-import { useAuth } from '@/lib/context/AuthContext'
-import { useApp } from '@/lib/context/AppContext'
-import { BillingCard } from '@/components/cards/BillingCard'
+import { Calendar, DollarSign, TrendingUp } from 'lucide-react'
+
 import { StatCard } from '@/components/cards/StatCard'
-import { DollarSign, TrendingUp, Calendar } from 'lucide-react'
-import { calculateMonthlyBill, formatCurrency } from '@/lib/utils/billCalculator'
+import { useCustomerBilling } from '@/lib/hooks/useCustomerBilling'
+
+const money = (value: number) => `৳${value.toLocaleString('en-BD')}`
 
 export default function UserBilling() {
-  const { currentUser } = useAuth()
-  const { getUserConnections, getUserBillings } = useApp()
-
-  if (!currentUser) return null
-
-  const connections = getUserConnections(currentUser.id)
-  const billings = getUserBillings(currentUser.id)
-  const monthlyBill = calculateMonthlyBill(connections)
-
-  const getConnectionName = (connectionId: string) => {
-    const conn = connections.find(c => c.id === connectionId)
-    return conn?.name || 'Unknown'
-  }
-
-  return (
-    <main className="mx-auto w-full max-w-6xl space-y-5 px-4 pb-10 pt-4 sm:space-y-6 sm:px-6 sm:pt-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-4xl font-bold text-foreground">Billing & Invoices</h1>
-        <p className="text-muted-foreground mt-2">View your billing history and invoices</p>
-      </div>
-
-      {/* Stats */}
-      <div className="grid md:grid-cols-3 gap-6">
-        <StatCard
-          title="Monthly Bill"
-          value={formatCurrency(monthlyBill)}
-          icon={DollarSign}
-          description="Current month"
-        />
-        <StatCard
-          title="Total Paid"
-          value={formatCurrency(currentUser.totalPaid || 0)}
-          icon={TrendingUp}
-          description="Lifetime"
-        />
-        <StatCard
-          title="Invoices"
-          value={billings.length}
-          icon={Calendar}
-          description={`${billings.filter(b => b.status === 'paid').length} paid`}
-        />
-      </div>
-
-      {/* Billing Summary */}
-      <div className="grid md:grid-cols-2 gap-6">
-        <div className="bg-card border border-border rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">Payment Summary</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Active Connections</span>
-              <span className="font-medium">{connections.filter(c => c.status === 'active').length}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Monthly Amount</span>
-              <span className="font-bold text-lg">{formatCurrency(monthlyBill)}</span>
-            </div>
-            <div className="border-t border-border pt-3 mt-3 flex justify-between">
-              <span className="text-foreground font-semibold">Due Next Month</span>
-              <span className="font-bold text-lg">{formatCurrency(monthlyBill)}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-card border border-border rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">Subscription Details</h3>
-          <div className="space-y-3">
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Status</p>
-              <p className="font-medium capitalize text-green-600">{currentUser.subscriptionStatus}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Member Since</p>
-              <p className="font-medium">{new Date(currentUser.joinDate).toLocaleDateString()}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Auto-Renewal</p>
-              <p className="font-medium text-amber-600">Enabled</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Invoices */}
-      <div>
-        <h2 className="text-2xl font-bold text-foreground mb-6">Recent Invoices</h2>
-        {billings.length > 0 ? (
-          <div className="grid md:grid-cols-2 gap-6">
-            {billings.slice().reverse().map(billing => (
-              <BillingCard
-                key={billing.id}
-                billing={billing}
-                connectionName={getConnectionName(billing.connectionId)}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="bg-card border border-border rounded-lg p-12 text-center">
-            <DollarSign className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">No Invoices Yet</h3>
-            <p className="text-muted-foreground">Your invoices will appear here once billing starts</p>
-          </div>
-        )}
-      </div>
-    </main>
-  )
+  const { data, error, activeConnections, totalPaid } = useCustomerBilling()
+  if (error) return <Message error={error} />
+  if (!data) return <Message>Loading billing…</Message>
+  const currentMonth = `${new Date().toISOString().slice(0, 7)}-01`
+  const currentBills = data.billings.filter(bill => bill.billing_month === currentMonth)
+  const monthlyBill = currentBills.reduce((sum, bill) => sum + Number(bill.amount), 0)
+  const paymentsByBill = new Map<string, number>()
+  for (const collection of data.collections) if (collection.billing_id) paymentsByBill.set(collection.billing_id, (paymentsByBill.get(collection.billing_id) ?? 0) + Number(collection.amount))
+  return <main className="mx-auto w-full max-w-6xl space-y-5 px-4 pb-10 pt-4 sm:space-y-6 sm:px-6 sm:pt-6">
+    <div><h1 className="text-4xl font-bold">Billing & Invoices</h1><p className="mt-2 text-muted-foreground">Your permanent billing and payment history.</p></div>
+    <div className="grid gap-3 sm:grid-cols-3"><StatCard title="Monthly Bill" value={money(monthlyBill)} icon={DollarSign} description="Current billing month" /><StatCard title="Total Paid" value={money(totalPaid)} icon={TrendingUp} description="Saved payments" /><StatCard title="Invoices" value={data.billings.length} icon={Calendar} description={`${data.billings.filter(bill => bill.status === 'paid').length} fully paid`} /></div>
+    <section className="rounded-3xl border border-border bg-card shadow-sm"><div className="border-b border-border p-5"><h2 className="font-bold">Invoices</h2></div><div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left text-sm"><thead className="bg-muted/50 text-xs text-muted-foreground"><tr>{['Month', 'Package', 'Bill', 'Paid', 'Due', 'Payment date', 'Status'].map(label => <th key={label} className="px-4 py-3 font-medium">{label}</th>)}</tr></thead><tbody>{data.billings.map(bill => { const paid = paymentsByBill.get(bill.id) ?? 0; const unpaid = Math.max(Number(bill.amount) - paid, 0); const paymentDates = data.collections.filter(collection => collection.billing_id === bill.id).map(collection => new Date(collection.created_at).toLocaleDateString()).join(', '); return <tr key={bill.id} className="border-t border-border"><td className="px-4 py-3">{new Date(`${bill.billing_month}T12:00:00`).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</td><td className="px-4 py-3">{bill.package_name_snapshot ?? '—'}</td><td className="px-4 py-3">{money(Number(bill.amount))}</td><td className="px-4 py-3">{money(paid)}</td><td className="px-4 py-3">{money(unpaid)}</td><td className="px-4 py-3">{paymentDates || '—'}</td><td className="px-4 py-3 capitalize">{paid >= Number(bill.amount) ? 'paid' : paid > 0 ? 'partial' : 'unpaid'}</td></tr> })}{!data.billings.length && <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">No invoices yet.</td></tr>}</tbody></table></div></section>
+    <p className="text-sm text-muted-foreground">{activeConnections.length} active connection{activeConnections.length === 1 ? '' : 's'}. Contact your administrator to record a payment.</p>
+  </main>
 }
+
+function Message({ children, error }: { children?: React.ReactNode; error?: string }) { return <main className="mx-auto max-w-6xl p-6"><p role={error ? 'alert' : undefined} className={error ? 'rounded-xl bg-red-500/10 p-4 text-red-600' : 'text-muted-foreground'}>{error ?? children}</p></main> }

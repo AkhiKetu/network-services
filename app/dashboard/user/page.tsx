@@ -1,111 +1,33 @@
 'use client'
 
 import Link from 'next/link'
-import { useAuth } from '@/lib/context/AuthContext'
-import { useApp } from '@/lib/context/AppContext'
-import { StatCard } from '@/components/cards/StatCard'
+import { Calendar, DollarSign, TrendingUp, Wifi } from 'lucide-react'
+
 import { ConnectionCard } from '@/components/cards/ConnectionCard'
+import { StatCard } from '@/components/cards/StatCard'
 import { Button } from '@/components/ui/button'
-import { Wifi, DollarSign, Calendar, TrendingUp } from 'lucide-react'
-import { calculateMonthlyBill } from '@/lib/utils/billCalculator'
-import { getRenewalDate } from '@/lib/utils/dateUtils'
+import { useCustomerBilling } from '@/lib/hooks/useCustomerBilling'
+
+const money = (value: number) => `৳${value.toLocaleString('en-BD')}`
 
 export default function UserDashboard() {
-  const { currentUser } = useAuth()
-  const { getUserConnections, updateConnection } = useApp()
+  const { data, error, activeConnections, totalPaid } = useCustomerBilling()
+  if (error) return <Message error={error} />
+  if (!data) return <Message>Loading dashboard…</Message>
 
-  if (!currentUser) return null
-
-  const connections = getUserConnections(currentUser.id)
-  const activeConnections = connections.filter(c => c.status === 'active')
-  const monthlyBill = calculateMonthlyBill(activeConnections)
-
-  const handleRenew = (connection: typeof connections[0]) => {
-    updateConnection({
-      ...connection,
-      expirationDate: getRenewalDate(),
-      status: 'active',
-    })
-  }
-
-  return (
-    <main className="mx-auto w-full max-w-6xl space-y-5 px-4 pb-10 pt-4 sm:space-y-6 sm:px-6 sm:pt-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-4xl font-bold text-foreground">Welcome, {currentUser.name}</h1>
-        <p className="text-muted-foreground mt-2">Manage your network connections and billing</p>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid md:grid-cols-4 gap-6">
-        <StatCard
-          title="Active Connections"
-          value={activeConnections.length}
-          icon={Wifi}
-          description={`${connections.length} total`}
-        />
-        <StatCard
-          title="Monthly Bill"
-          value={`$${monthlyBill.toFixed(2)}`}
-          icon={DollarSign}
-          description="Current month"
-        />
-        <StatCard
-          title="Subscription Status"
-          value={currentUser.subscriptionStatus === 'active' ? 'Active' : 'Inactive'}
-          icon={Calendar}
-          description={`Joined ${new Date(currentUser.joinDate).toLocaleDateString()}`}
-        />
-        <StatCard
-          title="Total Paid"
-          value={`$${(currentUser.totalPaid || 0).toFixed(2)}`}
-          icon={TrendingUp}
-          description="Lifetime"
-        />
-      </div>
-
-      {/* Quick Actions */}
-      <div className="bg-card border border-border rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-foreground mb-4">Quick Actions</h2>
-        <div className="flex flex-wrap gap-4">
-          <Link href="/dashboard/user/connections">
-            <Button>View All Connections</Button>
-          </Link>
-          <Link href="/dashboard/user/billing">
-            <Button variant="outline">View Billing</Button>
-          </Link>
-          <Link href="/dashboard/user/settings">
-            <Button variant="outline">Account Settings</Button>
-          </Link>
-        </div>
-      </div>
-
-      {/* Recent Connections */}
-      <div>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-foreground">Recent Connections</h2>
-          <Link href="/dashboard/user/connections">
-            <Button variant="ghost">View All</Button>
-          </Link>
-        </div>
-        {connections.length > 0 ? (
-          <div className="grid md:grid-cols-2 gap-6">
-            {connections.slice(0, 4).map(connection => (
-              <ConnectionCard
-                key={connection.id}
-                connection={connection}
-                onRenew={handleRenew}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="bg-card border border-border rounded-lg p-12 text-center">
-            <Wifi className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">No Connections Yet</h3>
-            <p className="text-muted-foreground">Contact support to add your first connection</p>
-          </div>
-        )}
-      </div>
-    </main>
-  )
+  const monthlyBill = activeConnections.reduce((sum, connection) => sum + Number(connection.monthly_price), 0)
+  return <main className="mx-auto w-full max-w-6xl space-y-5 px-4 pb-10 pt-4 sm:space-y-6 sm:px-6 sm:pt-6">
+    <div><h1 className="text-4xl font-bold text-foreground">Welcome, {data.profile.name}</h1><p className="mt-2 text-muted-foreground">Manage your network connections and billing.</p></div>
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <StatCard title="Active Connections" value={activeConnections.length} icon={Wifi} description={`${data.connections.length} total`} />
+      <StatCard title="Monthly Bill" value={money(monthlyBill)} icon={DollarSign} description="Active services" />
+      <StatCard title="Subscription Status" value={activeConnections.length ? 'Active' : 'Inactive'} icon={Calendar} description="Based on service dates" />
+      <StatCard title="Total Paid" value={money(totalPaid)} icon={TrendingUp} description="Saved payments" />
+    </div>
+    <div className="rounded-3xl border border-border bg-card p-5"><h2 className="mb-4 text-2xl font-bold">Quick Actions</h2><div className="flex flex-wrap gap-3"><Link href="/dashboard/user/connections"><Button>View All Connections</Button></Link><Link href="/dashboard/user/billing"><Button variant="outline">View Billing</Button></Link><Link href="/dashboard/user/settings"><Button variant="outline">Account Settings</Button></Link></div></div>
+    <section><div className="mb-4 flex items-center justify-between"><h2 className="text-2xl font-bold">Recent Connections</h2><Link href="/dashboard/user/connections"><Button variant="ghost">View All</Button></Link></div>{data.connections.length ? <div className="grid gap-4 md:grid-cols-2">{data.connections.slice(0, 4).map(connection => <ConnectionCard key={connection.id} connection={{ id: connection.id, userId: connection.user_id, name: connection.package_name, packageName: connection.package_name, activationDate: connection.start_date, expirationDate: connection.renewal_date, status: activeConnections.some(item => item.id === connection.id) ? 'active' : 'expired', monthlyPrice: Number(connection.monthly_price) }} />)}</div> : <Empty />}</section>
+  </main>
 }
+
+function Empty() { return <div className="rounded-3xl border border-border bg-card p-12 text-center text-muted-foreground">No connections yet. Contact support to add your first connection.</div> }
+function Message({ children, error }: { children?: React.ReactNode; error?: string }) { return <main className="mx-auto max-w-6xl p-6"><p role={error ? 'alert' : undefined} className={error ? 'rounded-xl bg-red-500/10 p-4 text-red-600' : 'text-muted-foreground'}>{error ?? children}</p></main> }
