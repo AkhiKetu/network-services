@@ -191,7 +191,7 @@ export default function Home() {
               </p>
 
               {/* HERO HIGHLIGHTS */}
-              <div className="mx-auto mt-7 grid w-full max-w-180 grid-cols-3 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.03]">
+              <div className="mx-auto mt-7 grid w-full max-w-180 grid-cols-3 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/3">
                 <div className="flex min-h-24 flex-col items-center justify-center gap-2.5 px-2 py-4 text-center transition-transform duration-200 hover:-translate-y-0.5">
                   <Wifi className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
 
