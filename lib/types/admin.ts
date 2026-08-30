@@ -1,6 +1,6 @@
 import type { EffectiveConnectionStatus } from '@/lib/utils/connectionStatus'
 
-export type AdminRole = 'owner' | 'admin'
+export type AdminRole = 'owner' | 'admin' | 'collector'
 export type PaymentMethod = 'cash' | 'bkash' | 'nagad' | 'bank'
 export type BillingStatus = 'paid' | 'unpaid'
 
@@ -11,7 +11,7 @@ export interface AdminProfile {
   username: string | null
   phone: string | null
   zone: string | null
-  role: 'owner' | 'admin' | 'user'
+  role: 'owner' | 'admin' | 'collector' | 'user'
   created_at: string | null
   deleted_at: string | null
 }
@@ -66,6 +66,7 @@ export interface AdminCollection {
   zone_snapshot: string | null
   package_name_snapshot: string | null
   created_at: string
+  collector_name?: string
 }
 
 export interface AdminNotification {

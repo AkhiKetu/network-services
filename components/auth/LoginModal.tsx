@@ -59,9 +59,11 @@ export function LoginModal({ open, onClose }: LoginModalProps) {
 
       onClose();
       router.push(
-        user.role === "owner" || user.role === "admin"
-          ? "/dashboard/admin"
-          : "/dashboard/user"
+        user.role === "collector"
+          ? "/dashboard/admin/collections"
+          : user.role === "owner" || user.role === "admin"
+            ? "/dashboard/admin"
+            : "/dashboard/user"
       );
     } catch (error) {
       setError(error instanceof Error ? error.message : "Unable to sign in. Please try again.");

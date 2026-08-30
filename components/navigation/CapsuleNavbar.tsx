@@ -18,7 +18,7 @@ import { ThemeToggle } from "@/components/common/ThemeToggle";
 import { useAuth } from "@/lib/context/AuthContext";
 
 interface CapsuleNavbarProps {
-  role: "user" | "admin" | "owner";
+  role: "user" | "admin" | "owner" | "collector";
 }
 
 const ADMIN_LINKS = [
@@ -65,6 +65,10 @@ const USER_LINKS = [
   },
 ];
 
+const COLLECTOR_LINKS = [
+  { label: "Bill Collection", href: "/dashboard/admin/collections", icon: ReceiptText },
+];
+
 function HoverLabel({ children }: { children: string }) {
   return (
     <span className="pointer-events-none absolute left-1/2 top-full z-[60] mt-2 -translate-x-1/2 translate-y-1 whitespace-nowrap rounded-full border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground opacity-0 shadow-lg transition-[opacity,transform] duration-150 ease-out group-hover:translate-y-0 group-hover:opacity-100">
@@ -80,7 +84,8 @@ export function CapsuleNavbar({ role }: CapsuleNavbarProps) {
   const router = useRouter();
 
   const isPrivileged = role === "owner" || role === "admin";
-  const links = isPrivileged ? ADMIN_LINKS : USER_LINKS;
+  const isCollector = role === "collector";
+  const links = isPrivileged ? ADMIN_LINKS : isCollector ? COLLECTOR_LINKS : USER_LINKS;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -115,7 +120,7 @@ export function CapsuleNavbar({ role }: CapsuleNavbarProps) {
       >
         {/* Logo */}
         <Link
-          href={isPrivileged ? "/dashboard/admin" : "/dashboard/user"}
+          href={isPrivileged ? "/dashboard/admin" : isCollector ? "/dashboard/admin/collections" : "/dashboard/user"}
           aria-label="Creative Cable & Networks"
           className="shrink-0 cursor-pointer px-1"
         >
@@ -157,11 +162,11 @@ export function CapsuleNavbar({ role }: CapsuleNavbarProps) {
         })}
 
         {/* Theme */}
-        <div className="group relative shrink-0">
+        {!isCollector && <div className="group relative shrink-0">
           <ThemeToggle className="h-8 w-8 cursor-pointer border-0 bg-transparent sm:h-9 sm:w-9" />
 
           {scrolled && <HoverLabel>Theme</HoverLabel>}
-        </div>
+        </div>}
 
         {/* Logout */}
         <div className="group relative shrink-0">

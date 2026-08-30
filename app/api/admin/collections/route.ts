@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-import { errorResponse, requireAdmin } from '@/lib/supabase/adminData'
+import { errorResponse, requireCollectionsAccess } from '@/lib/supabase/adminData'
 import { loadAdminBusinessData, toCustomers, toRecentCollections } from '@/lib/supabase/adminBusinessData'
 import type { PaymentMethod } from '@/lib/types/admin'
 import { getConnectionStatus } from '@/lib/utils/connectionStatus'
@@ -10,7 +10,7 @@ const METHODS = new Set<PaymentMethod>(['cash', 'bkash', 'nagad', 'bank'])
 
 export async function GET(request: Request) {
   try {
-    const { admin } = await requireAdmin()
+    const { admin } = await requireCollectionsAccess()
     const { profiles, connections, billings, collections } = await loadAdminBusinessData(admin)
 
     const requestedMonth = new URL(request.url).searchParams.get('month')
@@ -21,10 +21,11 @@ export async function GET(request: Request) {
     for (const payment of collections) {
       if (payment.billing_id) paymentsByBilling.set(payment.billing_id, [...(paymentsByBilling.get(payment.billing_id) ?? []), payment])
     }
+    const collectorNames = new Map(profiles.map(profile => [profile.id, profile.name ?? 'Unknown collector']))
     const history = billings.filter(billing => billing.billing_month === selectedMonth).map(billing => {
       const payments = paymentsByBilling.get(billing.id) ?? []
       const amountPaid = payments.reduce((sum, payment) => sum + Number(payment.amount), 0)
-      return { ...billing, amount_paid: amountPaid, unpaid_amount: Math.max(Number(billing.amount) - amountPaid, 0), payment_dates: payments.map(payment => payment.created_at), payment_status: amountPaid >= Number(billing.amount) ? 'paid' : amountPaid > 0 ? 'partial' : 'unpaid' }
+      return { ...billing, amount_paid: amountPaid, unpaid_amount: Math.max(Number(billing.amount) - amountPaid, 0), payment_dates: payments.map(payment => payment.created_at), collector_names: payments.map(payment => collectorNames.get(payment.collected_by) ?? 'Unknown collector'), payment_status: amountPaid >= Number(billing.amount) ? 'paid' : amountPaid > 0 ? 'partial' : 'unpaid' }
     })
     return NextResponse.json({
       customers: toCustomers(profiles.filter(profile => profile.role === 'user' && !profile.deleted_at), connections, billings),
@@ -41,7 +42,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const { admin, user } = await requireAdmin()
+    const { admin, user } = await requireCollectionsAccess()
     const body = await request.json() as {
       userId?: string
       amount?: number
@@ -76,33 +77,21 @@ export async function POST(request: Request) {
     if (billingError) throw billingError
     if (!currentBilling) return NextResponse.json({ error: 'There is no unpaid bill available for this customer.' }, { status: 400 })
 
-    const { data: previousPayments, error: previousPaymentsError } = await admin
-      .from('collections').select('amount').eq('billing_id', currentBilling.id)
-    if (previousPaymentsError) throw previousPaymentsError
-    const currentPaid = (previousPayments ?? []).reduce((sum, item) => sum + Number(item.amount), 0)
-    if (amount > Math.max(Number(currentBilling.amount) - currentPaid, 0)) {
-      return NextResponse.json({ error: 'Payment cannot be greater than the remaining bill amount.' }, { status: 400 })
+    const { data: payment, error: paymentError } = await admin.rpc('record_collection_payment', {
+      p_user_id: body.userId,
+      p_billing_id: currentBilling.id,
+      p_connection_id: connection.id,
+      p_amount: amount,
+      p_payment_method: paymentMethod,
+      p_reference_note: typeof body.referenceNote === 'string' ? body.referenceNote.trim() || null : null,
+      p_collected_by: user.id,
+    }).single()
+    if (paymentError || !payment) {
+      if (paymentError?.message === 'Bill already fully collected for this month.' || paymentError?.message === 'Payment cannot be greater than the remaining bill amount.') {
+        return NextResponse.json({ error: paymentError.message }, { status: 400 })
+      }
+      throw paymentError ?? new Error('Collection was not created.')
     }
-
-    const { data: collection, error: collectionError } = await admin
-      .from('collections')
-      .insert({
-        user_id: body.userId,
-        billing_id: currentBilling.id,
-        connection_id: connection.id,
-        amount,
-        payment_method: paymentMethod,
-        reference_note: typeof body.referenceNote === 'string' ? body.referenceNote.trim() || null : null,
-        collected_by: user.id,
-        billing_month: currentBilling.billing_month,
-        customer_id_snapshot: profile.customer_id,
-        customer_name_snapshot: profile.name,
-        zone_snapshot: profile.zone,
-        package_name_snapshot: connection.package_name,
-      })
-      .select('id')
-      .single()
-    if (collectionError || !collection) throw collectionError ?? new Error('Collection was not created.')
     const { data: collections, error: collectionsError } = await admin
       .from('collections')
       .select('amount')
@@ -165,7 +154,7 @@ export async function POST(request: Request) {
     } catch (error) {
       await admin.from('connections').update({ renewal_date: connection.renewal_date, status: connection.status }).eq('id', connection.id)
       await admin.from('billings').update({ status: 'unpaid', paid_at: null }).eq('id', currentBilling.id)
-      await admin.from('collections').delete().eq('id', collection.id)
+      await admin.from('collections').delete().eq('id', payment.collection_id)
       throw error
     }
 

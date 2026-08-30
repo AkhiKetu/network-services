@@ -7,6 +7,7 @@ export default async function UserDashboardLayout({ children }: { children: Reac
   if (!user) redirect('/')
   const { data: profile } = await supabase.from('profiles').select('role, deleted_at').eq('id', user.id).maybeSingle()
   if (!profile || profile.deleted_at) redirect('/')
+  if (profile.role === 'collector') redirect('/dashboard/admin/collections')
   if (profile.role === 'owner' || profile.role === 'admin') redirect('/dashboard/admin')
   return children
 }

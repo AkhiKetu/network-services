@@ -7,7 +7,7 @@ export interface User {
   email?: string
   name: string
   username?: string
-  role: 'owner' | 'admin' | 'user'
+  role: 'owner' | 'admin' | 'collector' | 'user'
   subscriptionStatus: 'active' | 'inactive' | 'expired'
   joinDate: string
   totalPaid?: number

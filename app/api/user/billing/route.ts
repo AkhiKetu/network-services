@@ -30,10 +30,20 @@ export async function GET() {
     return NextResponse.json({ error: 'Your portal profile is unavailable.' }, { status: 403 })
   }
 
+  const collectorIds = [...new Set((collectionsResult.data ?? []).map(collection => collection.collected_by).filter(Boolean))]
+  const { data: collectors, error: collectorsError } = collectorIds.length
+    ? await admin.from('profiles').select('id, name').in('id', collectorIds)
+    : { data: [], error: null }
+  if (collectorsError) {
+    console.error('Collector names fetch failed:', collectorsError)
+    return NextResponse.json({ error: 'Unable to load your billing information.' }, { status: 500 })
+  }
+  const collectorNames = new Map((collectors ?? []).map(collector => [collector.id, collector.name ?? 'Unknown collector']))
+
   return NextResponse.json({
     profile: profileResult.data,
     connections: connectionsResult.data ?? [],
     billings: billingsResult.data ?? [],
-    collections: collectionsResult.data ?? [],
+    collections: (collectionsResult.data ?? []).map(collection => ({ ...collection, collector_name: collectorNames.get(collection.collected_by) ?? 'Unknown collector' })),
   })
 }
