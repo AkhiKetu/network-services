@@ -316,6 +316,8 @@ export default function Home() {
         {/* CONTACT */}
         <section
           id="contact"
+          role="region"
+          aria-labelledby="contact-heading"
           className="scroll-mt-24 bg-transparent py-10 sm:py-14"
         >
           <div className={PAGE_WIDTH}>
@@ -324,7 +326,10 @@ export default function Home() {
                 Contact
               </p>
 
-              <h2 className="mb-3 text-2xl font-bold text-slate-950 dark:text-white sm:text-3xl">
+              <h2
+                id="contact-heading"
+                className="mb-3 text-2xl font-bold text-slate-950 dark:text-white sm:text-3xl"
+              >
                 Need Help or a New Connection?
               </h2>
 
@@ -373,7 +378,7 @@ export default function Home() {
                 </h3>
 
                 <p className="text-sm text-slate-600 dark:text-white/60">
-                  Rajdip, Rangamati
+                  Rajdwip, Rangamati
                 </p>
               </article>
             </div>
