@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-import { errorResponse, requireCollectionsAccess } from '@/lib/supabase/adminData'
+import { errorResponse, requireAdmin, requireCollectionsAccess } from '@/lib/supabase/adminData'
 import { loadAdminBusinessData, toCustomers, toRecentCollections } from '@/lib/supabase/adminBusinessData'
 import type { PaymentMethod, PaymentType } from '@/lib/types/admin'
 import { paymentStatus } from '@/lib/utils/paymentAccounting'
@@ -10,7 +10,7 @@ const PAYMENT_TYPES = new Set<PaymentType>(['full', 'partial', 'advance'])
 
 export async function GET(request: Request) {
   try {
-    const { admin } = await requireCollectionsAccess()
+    const { admin, profile } = await requireCollectionsAccess()
     const { profiles, connections, billings, collections, allocations } = await loadAdminBusinessData(admin)
     const requestedMonth = new URL(request.url).searchParams.get('month')
     const selectedMonth = /^\d{4}-\d{2}$/.test(requestedMonth ?? '') ? `${requestedMonth}-01` : `${new Date().toISOString().slice(0, 7)}-01`
@@ -26,7 +26,12 @@ export async function GET(request: Request) {
     })
     const history = bills.filter(billing => billing.billing_month === selectedMonth).map(billing => {
       const matching = allocations.filter(allocation => allocation.billing_id === billing.id).map(allocation => collectionById.get(allocation.collection_id)).filter(Boolean)
-      return { ...billing, payment_dates: matching.map(payment => payment!.created_at), collector_names: matching.map(payment => collectorNames.get(payment!.collected_by) ?? 'Unknown collector') }
+      return {
+        ...billing,
+        payment_dates: matching.map(payment => payment!.created_at),
+        collector_names: matching.map(payment => collectorNames.get(payment!.collected_by) ?? 'Unknown collector'),
+        payment_records: matching.map(payment => ({ id: payment!.id, amount: payment!.amount, created_at: payment!.created_at, collector_name: collectorNames.get(payment!.collected_by) ?? 'Unknown collector' })),
+      }
     })
     const partialBalances = bills.filter(bill => bill.payment_status === 'partial').map(bill => ({ ...bill, customer: profiles.find(profile => profile.id === bill.user_id), connection: connections.find(connection => connection.id === bill.connection_id) }))
     const advancePayments = collections.filter(collection => collection.payment_type === 'advance').map(collection => {
@@ -40,7 +45,7 @@ export async function GET(request: Request) {
     const today = new Date().toDateString()
     const monthBills = bills.filter(bill => bill.billing_month === selectedMonth)
     return NextResponse.json({
-      customers: toCustomers(profiles.filter(profile => profile.role === 'user' && !profile.deleted_at), connections, bills, allocations), records: toRecentCollections(collections, profiles), selectedMonth,
+      customers: toCustomers(profiles.filter(profile => profile.role === 'user' && !profile.deleted_at), connections, bills, allocations), records: toRecentCollections(collections, profiles), canDeleteCollections: profile.role === 'owner' || profile.role === 'admin', selectedMonth,
       availableMonths: Array.from(new Set(billings.map(billing => billing.billing_month))).sort().reverse(), history, partialBalances, advancePayments,
       totals: {
         expected: monthBills.reduce((sum, bill) => sum + Number(bill.amount), 0), collected: monthlyCollected, unpaid: monthBills.reduce((sum, bill) => sum + bill.unpaid_amount, 0),
@@ -55,14 +60,25 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const { admin, profile } = await requireCollectionsAccess()
-    const body = await request.json() as { userId?: string; amount?: number; paymentType?: PaymentType; paymentMethod?: string; referenceNote?: string }
+    const body = await request.json() as { userId?: string; billingId?: string; amount?: number; paymentType?: PaymentType; paymentMethod?: string; referenceNote?: string }
     const amount = Number(body.amount); const paymentMethod = body.paymentMethod?.toLowerCase() as PaymentMethod; const paymentType = body.paymentType as PaymentType
-    if (!body.userId || !Number.isFinite(amount) || amount <= 0 || !METHODS.has(paymentMethod) || !PAYMENT_TYPES.has(paymentType)) return NextResponse.json({ error: 'Provide a customer, payment type, valid amount, and payment method.' }, { status: 400 })
+    if (!body.userId || (!body.billingId && paymentType !== 'advance') || !Number.isFinite(amount) || amount <= 0 || !METHODS.has(paymentMethod) || !PAYMENT_TYPES.has(paymentType)) return NextResponse.json({ error: 'Provide a customer, payment type, valid amount, and payment method.' }, { status: 400 })
     const { data: connection, error: connectionError } = await admin.from('connections').select('id').eq('user_id', body.userId).is('deleted_at', null).order('created_at', { ascending: false }).limit(1).maybeSingle()
     if (connectionError) throw connectionError
     if (!connection) return NextResponse.json({ error: 'This customer does not have an active business record.' }, { status: 400 })
-    const { data, error } = await admin.rpc('record_collection_payment_v2', { p_user_id: body.userId, p_connection_id: connection.id, p_amount: amount, p_payment_type: paymentType, p_payment_method: paymentMethod, p_reference_note: typeof body.referenceNote === 'string' ? body.referenceNote.trim() || null : null, p_collected_by: profile.id }).single()
+    const { data, error } = await admin.rpc('record_collection_payment_v2', { p_user_id: body.userId, p_connection_id: connection.id, p_amount: amount, p_payment_type: paymentType, p_payment_method: paymentMethod, p_reference_note: typeof body.referenceNote === 'string' ? body.referenceNote.trim() || null : null, p_collected_by: profile.id, p_billing_id: body.billingId ?? null }).single()
     if (error) return NextResponse.json({ error: error.message }, { status: 400 })
     return NextResponse.json({ success: true, payment: data })
+  } catch (error) { return errorResponse(error) }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { admin, profile } = await requireAdmin()
+    const body = await request.json() as { collectionId?: string }
+    if (!body.collectionId) return NextResponse.json({ error: 'Collection is required.' }, { status: 400 })
+    const { error } = await admin.rpc('reverse_collection_payment_v2', { p_collection_id: body.collectionId, p_deleted_by: profile.id })
+    if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+    return NextResponse.json({ success: true })
   } catch (error) { return errorResponse(error) }
 }
