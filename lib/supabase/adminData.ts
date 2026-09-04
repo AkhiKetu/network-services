@@ -13,7 +13,7 @@ export async function requireAdmin() {
 
   const { data: profile, error: profileError } = await sessionClient
     .from('profiles')
-    .select('id, customer_id, name, phone, zone, role, created_at, deleted_at')
+    .select('id, customer_id, name, username, phone, zone, role, created_at, deleted_at')
     .eq('id', user.id)
     .maybeSingle()
 
@@ -34,7 +34,7 @@ export async function requireCollectionsAccess() {
 
   const { data: profile, error: profileError } = await sessionClient
     .from('profiles')
-    .select('id, customer_id, name, phone, zone, role, created_at, deleted_at')
+    .select('id, customer_id, name, username, phone, zone, role, created_at, deleted_at')
     .eq('id', user.id)
     .maybeSingle()
 

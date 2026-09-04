@@ -2,7 +2,8 @@ import type { EffectiveConnectionStatus } from '@/lib/utils/connectionStatus'
 
 export type AdminRole = 'owner' | 'admin' | 'collector'
 export type PaymentMethod = 'cash' | 'bkash' | 'nagad' | 'bank'
-export type BillingStatus = 'paid' | 'unpaid'
+export type BillingStatus = 'paid' | 'partial' | 'unpaid'
+export type PaymentType = 'full' | 'partial' | 'advance'
 
 export interface AdminProfile {
   id: string
@@ -57,6 +58,7 @@ export interface AdminCollection {
   billing_id: string | null
   connection_id: string | null
   amount: number
+  payment_type: PaymentType
   payment_method: PaymentMethod
   reference_note: string | null
   collected_by: string
@@ -67,6 +69,14 @@ export interface AdminCollection {
   package_name_snapshot: string | null
   created_at: string
   collector_name?: string
+}
+
+export interface AdminCollectionAllocation {
+  id: string
+  collection_id: string
+  billing_id: string
+  amount: number
+  created_at: string
 }
 
 export interface AdminNotification {
