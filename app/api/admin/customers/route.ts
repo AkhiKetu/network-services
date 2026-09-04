@@ -537,7 +537,8 @@ export async function PATCH(request: Request) {
   }
 
   const customerPackage = getCustomerPackage(payload.packageName?.trim() ?? '')
-  if (!payload.id || !payload.connectionId || !payload.customerId?.trim() || !payload.name?.trim() || !payload.username?.trim() || !payload.phone?.trim() || !payload.zone?.trim() || !customerPackage || !isCustomerZone(payload.zone.trim()) || !isConnectionType(payload.connectionType?.trim() ?? '')) {
+  const monthlyPrice = Number(payload.monthlyPrice)
+  if (!payload.id || !payload.connectionId || !payload.customerId?.trim() || !payload.name?.trim() || !payload.username?.trim() || !payload.phone?.trim() || !payload.zone?.trim() || !customerPackage || !Number.isFinite(monthlyPrice) || monthlyPrice < 0 || !isCustomerZone(payload.zone.trim()) || !isConnectionType(payload.connectionType?.trim() ?? '')) {
     return apiError('Complete every customer field and provide a valid monthly bill.', 400)
   }
 
@@ -546,13 +547,22 @@ export async function PATCH(request: Request) {
   const { data: matchingUsername, error: usernameError } = await admin.from('profiles').select('id').eq('username', username).neq('id', payload.id).maybeSingle()
   if (usernameError) return apiError('Unable to validate username.', 500)
   if (matchingUsername) return apiError('This username is already taken. Please choose another one.', 409)
-  const [{ data: profile, error: profileError }, { data: connection, error: connectionError }] = await Promise.all([
-    admin.from('profiles').update({ customer_id: payload.customerId.trim(), name: payload.name.trim(), username, phone: payload.phone.trim(), zone: payload.zone.trim() }).eq('id', payload.id).eq('role', 'user').is('deleted_at', null).select('id, customer_id, name, username, phone, zone, role, created_at, deleted_at').single(),
-    admin.from('connections').update({ package_name: customerPackage.name, monthly_price: customerPackage.monthlyPrice, connection_type: payload.connectionType!.trim(), connection_date: payload.connectionDate?.trim() || null, onu_receive_power: payload.onuReceivePower?.trim() || null, onu_mac_address: payload.onuMacAddress?.trim() || null, pon_number: payload.ponNumber?.trim() || null, mikrotik_password: payload.mikrotikPassword || null }).eq('id', payload.connectionId).eq('user_id', payload.id).is('deleted_at', null).select('id, user_id, package_name, monthly_price, connection_type, connection_date, onu_receive_power, onu_mac_address, pon_number, mikrotik_password, status, start_date, renewal_date, billing_start_date, created_at, deleted_at').single(),
-  ])
+  const { data: profile, error: profileError } = await admin.from('profiles').update({ customer_id: payload.customerId.trim(), name: payload.name.trim(), username, phone: payload.phone.trim(), zone: payload.zone.trim() }).eq('id', payload.id).eq('role', 'user').is('deleted_at', null).select('id, customer_id, name, username, phone, zone, role, created_at, deleted_at').single()
+  if (profileError || !profile) {
+    console.error('Customer profile update failed:', profileError)
+    return apiError('Unable to update this customer.', 500)
+  }
 
-  if (profileError || connectionError || !profile || !connection) {
-    console.error('Customer update failed:', profileError ?? connectionError)
+  const { error: billingSyncError } = await admin.rpc('update_connection_monthly_price_v2', { p_user_id: payload.id, p_connection_id: payload.connectionId, p_monthly_price: monthlyPrice, p_package_name: customerPackage.name })
+  if (billingSyncError) {
+    console.error('Monthly bill synchronization failed:', billingSyncError)
+    return apiError('Unable to synchronize this customer’s monthly bill.', 500)
+  }
+
+  const { data: connection, error: connectionError } = await admin.from('connections').update({ connection_type: payload.connectionType!.trim(), connection_date: payload.connectionDate?.trim() || null, onu_receive_power: payload.onuReceivePower?.trim() || null, onu_mac_address: payload.onuMacAddress?.trim() || null, pon_number: payload.ponNumber?.trim() || null, mikrotik_password: payload.mikrotikPassword || null }).eq('id', payload.connectionId).eq('user_id', payload.id).is('deleted_at', null).select('id, user_id, package_name, monthly_price, connection_type, connection_date, onu_receive_power, onu_mac_address, pon_number, mikrotik_password, status, start_date, renewal_date, billing_start_date, created_at, deleted_at').single()
+
+  if (connectionError || !connection) {
+    console.error('Customer connection update failed:', connectionError)
     return apiError('Unable to update this customer.', 500)
   }
   return NextResponse.json({ profile, connection })

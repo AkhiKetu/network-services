@@ -41,7 +41,9 @@ export async function GET(request: Request) {
       const nextBill = bills.filter(bill => bill.connection_id === collection.connection_id && bill.billing_month > (latestPaid?.billing_month ?? '')).sort((a, b) => a.billing_month.localeCompare(b.billing_month))[0]
       return { ...collection, customer: profiles.find(profile => profile.id === collection.user_id), connection: connections.find(connection => connection.id === collection.connection_id), months_covered: paidBills.length, paid_through: latestPaid?.billing_month ?? null, next_billing: nextBill ?? null }
     })
-    const monthlyCollected = allocations.filter(allocation => bills.find(bill => bill.id === allocation.billing_id)?.billing_month === selectedMonth).reduce((sum, allocation) => sum + Number(allocation.amount), 0)
+    const monthlyCollected = collections
+      .filter(collection => collection.created_at.slice(0, 7) === selectedMonth.slice(0, 7))
+      .reduce((sum, collection) => sum + Number(collection.amount), 0)
     const today = new Date().toDateString()
     const monthBills = bills.filter(bill => bill.billing_month === selectedMonth)
     return NextResponse.json({

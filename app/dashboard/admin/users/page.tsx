@@ -46,6 +46,12 @@ const blank = (): FormValues => ({
   password: '',
 })
 
+async function readJson(response: Response): Promise<{ error?: string; [key: string]: unknown }> {
+  const body = await response.text()
+  if (!body) return {}
+  try { return JSON.parse(body) as { error?: string; [key: string]: unknown } } catch { return {} }
+}
+
 const toUser = (customer: AdminCustomer): User => ({
   id: customer.id,
   customerId: customer.customer_id ?? undefined,
@@ -134,7 +140,7 @@ export default function AdminUsers() {
         cache: 'no-store',
       })
 
-      const data = await response.json()
+      const data = await readJson(response)
 
       if (!response.ok) {
         throw new Error(data.error ?? 'Unable to load customers.')
@@ -351,7 +357,7 @@ export default function AdminUsers() {
         }
       )
 
-      const data = await response.json()
+      const data = await readJson(response)
 
       if (!response.ok) {
         throw new Error(
@@ -417,7 +423,7 @@ export default function AdminUsers() {
         }
       )
 
-      const data = await response.json()
+      const data = await readJson(response)
 
       if (!response.ok) {
         throw new Error(
@@ -456,7 +462,7 @@ export default function AdminUsers() {
         }
       )
 
-      const data = await response.json()
+      const data = await readJson(response)
 
       if (!response.ok) {
         throw new Error(
